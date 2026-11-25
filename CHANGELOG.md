@@ -2,6 +2,9 @@
 
 Per versie een kopje `## <versie>` met een opsomming. De workflow zet die regels in de GitHub Release en de app toont ze in de updatemelding.
 
+## 1.1
+- Gewijzigd: de hoes van het nummer komt niet meer van een verzamelalbum (Compilation, DJ-mix of Mixtape) of van een release van "Various Artists". Is er geen andere hoes, dan blijft het bij de koperbalken (of de foto van de artiest, als die aan staat). Eerder opgeslagen hoezen worden bij de eerste keer opnieuw opgehaald.
+
 ## 1.0
 - Nieuw: de eerste openbare versie van SceneRadio, afgeleid van een privé hobbyproject. Alleen om te luisteren: geen account, geen token en geen schrijven naar GitHub.
 - Nieuw: de standaardlijst "Nederlandse radio" en de logo's komen uit de openbare repository onneau/sceneradio-m3u, zonder token. De app ziet een nieuwe lijst aan de SHA-256 van het bestand.

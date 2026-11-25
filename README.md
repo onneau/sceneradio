@@ -103,7 +103,7 @@ Er zijn geen accounts, geen advertenties en geen analyse. Zenders, favorieten en
 | `raw.githubusercontent.com` (onneau/sceneradio-m3u) | De zenderlijst en de logo's | Na het opstarten (hooguit eens per 6 uur) en bij het tonen van logo's |
 | `api.github.com` en `github.com` (onneau/sceneradio) | Controleren op en downloaden van een app-update | Hooguit eens per dag (uit te zetten) en bij **Nu updaten** |
 | Radio Browser (`*.api.radio-browser.info`) | Zenders zoeken en een logo vinden | Alleen als je daar zoekt |
-| MusicBrainz, Cover Art Archive | De hoes van het nummer dat speelt (artiest en titel gaan mee) | Alleen als je **Hoes van het nummer** aanzet |
+| MusicBrainz, Cover Art Archive | De hoes van het nummer dat speelt (artiest en titel gaan mee); verzamelalbums worden overgeslagen | Alleen als je **Hoes van het nummer** aanzet |
 | MusicBrainz, Wikidata, Wikimedia Commons | Een foto van de artiest (alleen de naam gaat mee) | Alleen als je **Foto van de artiest** aanzet |
 
 GitHub en de andere diensten zien daarbij je IP-adres. Hoezen en foto's zijn van hun makers en blijven alleen in de cache van het toestel. De automatische controle op een app-update is uit te zetten (**Instellingen > Updates**). De controle op een nieuwe standaardlijst gebeurt na het opstarten, hooguit eens per 6 uur.

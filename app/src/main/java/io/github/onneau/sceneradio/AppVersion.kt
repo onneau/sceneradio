@@ -12,6 +12,6 @@ package io.github.onneau.sceneradio
  * de workflow zoekt ze op.
  */
 object AppVersion {
-    const val NUMBER = "1.0"
+    const val NUMBER = "1.1"
     const val BUILD = "lokaal"
 }
