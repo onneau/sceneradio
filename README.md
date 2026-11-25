@@ -1,6 +1,6 @@
 # SceneRadio
 
-SceneRadio is een Android-app om internetradio te luisteren, met een Amiga-visualizer in de stijl van een cracktro uit 1990. De app is gemaakt om te **luisteren**: er is geen account, geen token en geen schrijven naar GitHub. De standaardlijst met Nederlandse radiozenders en hun logo's haalt de app uit de openbare repository [onneau/sceneradio-m3u](https://github.com/onneau/sceneradio-m3u).
+SceneRadio is een Android-app om internetradio te luisteren, met een Amiga-visualizer in de stijl van een cracktro uit 80's-90's. De app is gemaakt om te **luisteren**: er is geen account, geen token en geen schrijven naar GitHub. De standaardlijst met Nederlandse radiozenders en hun logo's haalt de app uit de openbare repository [onneau/sceneradio-m3u](https://github.com/onneau/sceneradio-m3u).
 
 Gebouwd met **Kotlin** en **Jetpack Compose (Material 3)**, **Room**, **DataStore**, **Coil**, **OkHttp** en **AndroidX Media3**. Geen Firebase, geen reclame, geen trackers.
 
