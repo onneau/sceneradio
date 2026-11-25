@@ -1,0 +1,107 @@
+name: android
+# Alleen bij een push en met de hand. Bewust geen pull_request: een bouw voor een voorstel van een ander mag nooit bij de
+# geheimen (de ondertekeningssleutel) of een Release kunnen komen.
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  # write: nodig om een GitHub Release (APK + changelog) aan te maken bij een nieuw versienummer.
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+        with:
+          packages: platform-tools
+      - name: Install SDK 36
+        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+      - name: Signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          SECRET_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SECRET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          KS="$RUNNER_TEMP/sceneradio.jks"
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$SECRET_KEYSTORE_PASSWORD" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$KS"
+            PASS="$SECRET_KEYSTORE_PASSWORD"
+            ALIAS="${SECRET_KEY_ALIAS:-sceneradio}"
+            echo "PERMANENT_KEY=1" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Geen KEYSTORE_BASE64 / KEYSTORE_PASSWORD secrets ingesteld. Er wordt een tijdelijke sleutel gebruikt; deze APK kan niet over een eerder geinstalleerde versie heen. Zie README."
+            PASS="$(openssl rand -hex 16)"
+            ALIAS="sceneradio"
+            echo "PERMANENT_KEY=0" >> "$GITHUB_ENV"
+            keytool -genkeypair \
+              -keystore "$KS" \
+              -alias "$ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$PASS" -keypass "$PASS" \
+              -dname "CN=SceneRadio, OU=Personal, O=SceneRadio, C=NL"
+          fi
+          echo "::add-mask::$PASS"
+          {
+            echo "KEYSTORE_PATH=$KS"
+            echo "KEYSTORE_PASSWORD=$PASS"
+            echo "KEY_ALIAS=$ALIAS"
+          } >> "$GITHUB_ENV"
+      - name: Versie-stempel (commit in de app)
+        run: |
+          sed -i "s/const val BUILD = \".*\"/const val BUILD = \"${GITHUB_SHA::7}\"/" app/src/main/java/io/github/onneau/sceneradio/AppVersion.kt
+          grep -n "const val BUILD" app/src/main/java/io/github/onneau/sceneradio/AppVersion.kt
+      - name: Versienummer en versionCode
+        run: |
+          set -euo pipefail
+          NUMBER="$(sed -n 's/.*const val NUMBER = "\(.*\)".*/\1/p' app/src/main/java/io/github/onneau/sceneradio/AppVersion.kt)"
+          [ -n "$NUMBER" ] || { echo "::error::Geen NUMBER gevonden in AppVersion.kt"; exit 1; }
+          IFS=. read -r MAJ MIN PAT <<< "$NUMBER"
+          # 1.13 wordt 1013000: elk nieuw versienummer geeft een hogere versionCode, anders weigert Android de update.
+          CODE=$(( 10#${MAJ:-0} * 1000000 + 10#${MIN:-0} * 1000 + 10#${PAT:-0} ))
+          echo "VERSION_NAME=$NUMBER" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$CODE" >> "$GITHUB_ENV"
+          echo "Versie $NUMBER, versionCode $CODE"
+      - name: Build
+        run: chmod +x ./gradlew && ./gradlew :app:assembleRelease -PappVersionCode="$VERSION_CODE" -PappVersionName="$VERSION_NAME" --no-daemon --stacktrace
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: SceneRadio
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+      - name: GitHub Release (alleen bij een nieuw versienummer, met de vaste sleutel)
+        if: github.ref == 'refs/heads/main' && env.PERMANENT_KEY == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG="v$VERSION_NAME"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG bestaat al; niets te doen."
+            exit 0
+          fi
+          # De tekst van de Release: de opsomming onder "## <versie>" in CHANGELOG.md.
+          NOTES="$RUNNER_TEMP/release-notes.md"
+          awk -v ver="$VERSION_NAME" '
+            /^## / { on = (($2 "") == (ver "")); next }
+            on { print }
+          ' CHANGELOG.md | sed -e '/./,$!d' > "$NOTES" || true
+          if [ ! -s "$NOTES" ]; then
+            echo "::warning::Geen regels gevonden onder '## $VERSION_NAME' in CHANGELOG.md; de Release krijgt een standaardtekst."
+            echo "- Nieuwe versie $VERSION_NAME." > "$NOTES"
+          fi
+          APK="$(ls app/build/outputs/apk/release/*.apk | head -n 1)"
+          cp "$APK" "$RUNNER_TEMP/SceneRadio-$VERSION_NAME.apk"
+          gh release create "$TAG" "$RUNNER_TEMP/SceneRadio-$VERSION_NAME.apk" \
+            --title "SceneRadio $VERSION_NAME" \
+            --notes-file "$NOTES" \
+            --target "$GITHUB_SHA"

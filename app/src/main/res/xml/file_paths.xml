@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Alleen de map met gedownloade app-updates (aan het installatiescherm van Android) en de map met
+     zenderlijsten die je deelt (aan de app die je kiest) worden via de FileProvider doorgegeven. -->
+<paths>
+    <cache-path name="updates" path="updates/" />
+    <cache-path name="exports" path="exports/" />
+</paths>

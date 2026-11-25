@@ -1,0 +1,18 @@
+# Gradle / Android
+.gradle/
+/build/
+/app/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+/local.properties
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Signeersleutels nooit committen
+*.jks
+*.keystore
+*.zip

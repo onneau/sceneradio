@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">SceneRadio</string>
+    <string name="tab_player">Speler</string>
+    <string name="tab_stations">Stations</string>
+    <string name="tab_settings">Instellingen</string>
+    <string name="now_playing">Nu live</string>
+    <string name="buffering">Bezig met bufferen…</string>
+    <string name="playback_failed">Kan radiostream niet laden. Controleer de internetverbinding.</string>
+</resources>
