@@ -6,6 +6,7 @@ import androidx.core.content.FileProvider
 import io.github.onneau.sceneradio.data.export.DownloadsSaver
 import io.github.onneau.sceneradio.data.export.SavedFile
 import java.io.File
+import io.github.onneau.sceneradio.i18n.tr
 
 /**
  * Het logboek als tekstbestand naar buiten brengen: opslaan in Downloads of delen met een andere app.
@@ -37,7 +38,7 @@ object LogExport {
                 putExtra(Intent.EXTRA_SUBJECT, file.name)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            Intent.createChooser(send, "Logboek delen").apply { addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            Intent.createChooser(send, tr("Logboek delen", "Share log")).apply { addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
         }.also { result ->
             result.onSuccess {
                 AppLog.i(

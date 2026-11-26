@@ -5,6 +5,7 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import io.github.onneau.sceneradio.data.log.AppLog
 import io.github.onneau.sceneradio.data.repository.RadioRepository
+import io.github.onneau.sceneradio.i18n.Lang
 import io.github.onneau.sceneradio.playback.PlaybackConnection
 import okhttp3.OkHttpClient
 
@@ -20,6 +21,8 @@ class SceneRadioApp : Application(), ImageLoaderFactory {
         super.onCreate()
         // Het logboek als eerste, zodat ook een crash tijdens het opstarten erin komt.
         AppLog.init(this)
+        // De taalkeuze meteen daarna, voordat een scherm of de mediadienst tekst toont.
+        Lang.init(this)
         repository = RadioRepository(this)
         playback = PlaybackConnection(this)
     }

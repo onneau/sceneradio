@@ -10,6 +10,9 @@ interface StationDao {
     @Query("SELECT * FROM stations ORDER BY orderIndex ASC, id ASC")
     fun getAllStations(): Flow<List<RadioStation>>
 
+    @Query("SELECT * FROM stations ORDER BY orderIndex ASC, id ASC")
+    suspend fun getAllStationsOnce(): List<RadioStation>
+
     @Query("SELECT * FROM stations WHERE isEnabled = 1 ORDER BY orderIndex ASC, id ASC")
     fun getEnabledStations(): Flow<List<RadioStation>>
 
@@ -69,6 +72,9 @@ interface StationDao {
 interface PlaylistDao {
     @Query("SELECT * FROM playlists ORDER BY createdAt DESC")
     fun getAllPlaylists(): Flow<List<Playlist>>
+
+    @Query("SELECT * FROM playlists ORDER BY createdAt DESC")
+    suspend fun getAllPlaylistsOnce(): List<Playlist>
 
     @Query("SELECT * FROM playlists WHERE id = :id LIMIT 1")
     suspend fun getPlaylistById(id: Long): Playlist?

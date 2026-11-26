@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import io.github.onneau.sceneradio.i18n.tr
 
 /** Melding bovenaan de zenderlijst: er is een nieuwe versie van de standaard zenderlijst. */
 @Composable
@@ -35,16 +36,16 @@ fun PlaylistUpdateBanner(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = if (isFirstImport) "Zenderlijst beschikbaar" else "Nieuwe zenderlijst beschikbaar",
+                text = if (isFirstImport) tr("Zenderlijst beschikbaar", "Station list available") else tr("Nieuwe zenderlijst beschikbaar", "New station list available"),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Text(
                 text = if (isFirstImport) {
-                    "Download de actuele lijst met Nederlandse zenders en logo's."
+                    tr("Download de actuele lijst met Nederlandse zenders en logo's.", "Download the current list of Dutch stations and logos.")
                 } else {
-                    "Er is een bijgewerkte lijst. Je favorieten en verborgen zenders blijven behouden."
+                    tr("Er is een bijgewerkte lijst. Je favorieten en verborgen zenders blijven behouden.", "An updated list is available. Your favorites and hidden stations are kept.")
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -53,9 +54,9 @@ fun PlaylistUpdateBanner(
                 Button(onClick = onUpdate, enabled = !isBusy) {
                     Text(
                         when {
-                            isBusy -> "Bezig…"
-                            isFirstImport -> "Downloaden"
-                            else -> "Bijwerken"
+                            isBusy -> tr("Bezig…", "Working…")
+                            isFirstImport -> tr("Downloaden", "Download")
+                            else -> tr("Bijwerken", "Update")
                         }
                     )
                 }

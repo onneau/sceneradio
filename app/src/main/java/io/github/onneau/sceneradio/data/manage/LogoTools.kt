@@ -16,6 +16,7 @@ import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.roundToInt
+import io.github.onneau.sceneradio.i18n.tr
 
 fun sha256Hex(bytes: ByteArray): String =
     MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
@@ -43,7 +44,7 @@ object LogoTools {
             val read = stream.read(buffer)
             if (read < 0) break
             total += read
-            if (total > MAX_BYTES) throw IllegalArgumentException("De afbeelding is te groot (maximaal 12 MB).")
+            if (total > MAX_BYTES) throw IllegalArgumentException(tr("De afbeelding is te groot (maximaal 12 MB).", "The image is too large (maximum 12 MB)."))
             out.write(buffer, 0, read)
         }
         return out.toByteArray()
@@ -56,7 +57,7 @@ object LogoTools {
         } catch (e: Exception) {
             null
         }
-        if (stream == null) throw IllegalArgumentException("Deze afbeelding kon niet worden geopend.")
+        if (stream == null) throw IllegalArgumentException(tr("Deze afbeelding kon niet worden geopend.", "This image could not be opened."))
         return stream.use { readLimited(it) }
     }
 
@@ -65,23 +66,23 @@ object LogoTools {
         val request = try {
             Request.Builder().url(url.trim()).header("User-Agent", "SceneRadio/1.0").build()
         } catch (e: IllegalArgumentException) {
-            throw IllegalArgumentException("Dit is geen geldige URL (begin met http:// of https://).")
+            throw IllegalArgumentException(tr("Dit is geen geldige URL (begin met http:// of https://).", "This is not a valid URL (start with http:// or https://)."))
         }
         return try {
             client.newCall(request).execute().use { response ->
                 if (response.code != 200) {
-                    throw IllegalArgumentException("Downloaden mislukt (HTTP ${response.code}).")
+                    throw IllegalArgumentException(tr("Downloaden mislukt (HTTP ${response.code}).", "Download failed (HTTP ${response.code})."))
                 }
                 val type = (response.header("Content-Type") ?: "").substringBefore(';').trim().lowercase()
                 if (!type.startsWith("image/")) {
-                    val shown = if (type.isEmpty()) "geen Content-Type" else type
-                    throw IllegalArgumentException("Dit is geen afbeelding ($shown).")
+                    val shown = if (type.isEmpty()) tr("geen Content-Type", "no Content-Type") else type
+                    throw IllegalArgumentException(tr("Dit is geen afbeelding ($shown).", "This is not an image ($shown)."))
                 }
-                val body = response.body ?: throw IllegalArgumentException("Lege reactie van de server.")
+                val body = response.body ?: throw IllegalArgumentException(tr("Lege reactie van de server.", "Empty response from the server."))
                 readLimited(body.byteStream())
             }
         } catch (e: IOException) {
-            throw IllegalArgumentException("Downloaden mislukt: ${e.message ?: "geen verbinding"}.")
+            throw IllegalArgumentException(tr("Downloaden mislukt: ${e.message ?: "geen verbinding"}.", "Download failed: ${e.message ?: "no connection"}."))
         }
     }
 
@@ -90,14 +91,14 @@ object LogoTools {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(source, 0, source.size, bounds)
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
-            throw IllegalArgumentException("Dit bestand is geen bruikbare afbeelding. Gebruik PNG of JPG (SVG wordt niet ondersteund).")
+            throw IllegalArgumentException(tr("Dit bestand is geen bruikbare afbeelding. Gebruik PNG of JPG (SVG wordt niet ondersteund).", "This file is not a usable image. Use PNG or JPG (SVG is not supported)."))
         }
 
         var sample = 1
         while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) >= MAX_SIDE) sample *= 2
         val options = BitmapFactory.Options().apply { inSampleSize = sample }
         val decoded = BitmapFactory.decodeByteArray(source, 0, source.size, options)
-            ?: throw IllegalArgumentException("Dit bestand is geen bruikbare afbeelding.")
+            ?: throw IllegalArgumentException(tr("Dit bestand is geen bruikbare afbeelding.", "This file is not a usable image."))
 
         val longest = max(decoded.width, decoded.height)
         val scaled = if (longest > MAX_SIDE) {

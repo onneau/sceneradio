@@ -45,6 +45,7 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.sqrt
+import io.github.onneau.sceneradio.i18n.tr
 
 // ------------------------------------------------------------------------------------------------
 // Vaste maten. Alles wordt getekend op 256 regels hoog, zoals een Amiga PAL-scherm, zodat de
@@ -1038,7 +1039,7 @@ private fun scrollText(artist: String?, title: String?): String = when {
     !artist.isNullOrBlank() && !title.isNullOrBlank() -> "$artist - $title"
     !title.isNullOrBlank() -> title
     !artist.isNullOrBlank() -> artist
-    else -> "Live radio uitzending"
+    else -> tr("Live radio uitzending", "Live radio broadcast")
 }
 
 /**

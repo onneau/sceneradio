@@ -41,12 +41,16 @@ import androidx.compose.ui.unit.dp
 import io.github.onneau.sceneradio.ui.components.PlaylistUpdateBanner
 import io.github.onneau.sceneradio.ui.components.StationLogo
 import io.github.onneau.sceneradio.data.model.RadioStation
+import io.github.onneau.sceneradio.data.model.ALL_GENRES
+import io.github.onneau.sceneradio.data.model.genreLabel
+import io.github.onneau.sceneradio.data.model.genreText
 import io.github.onneau.sceneradio.data.model.genres
 import io.github.onneau.sceneradio.ui.RadioViewModel
 import io.github.onneau.sceneradio.ui.StationSort
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
+import io.github.onneau.sceneradio.i18n.tr
 
 // Liggend scherm: de zenders als afgeronde tegels in een raster van 7 kolommen en 2 rijen, per pagina te swipen.
 private const val GRID_COLUMNS = 7
@@ -83,7 +87,7 @@ fun StationsScreen(
 
     // Distinct groups / genres
     val groups = remember(allStations) {
-        listOf("Alles") + allStations.flatMap { it.genres() }.distinctBy { it.lowercase() }.sortedBy { it.lowercase() }
+        listOf(ALL_GENRES) + allStations.flatMap { it.genres() }.distinctBy { it.lowercase() }.sortedBy { it.lowercase() }
     }
 
     Scaffold(
@@ -130,12 +134,12 @@ fun StationsScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.searchQuery.value = it },
-                    placeholder = { Text("Zoek op station of genre…") },
+                    placeholder = { Text(tr("Zoek op station of genre…", "Search by station or genre…")) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { viewModel.searchQuery.value = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Wissen")
+                                Icon(Icons.Default.Clear, contentDescription = tr("Wissen", "Clear"))
                             }
                         }
                     },
@@ -154,13 +158,13 @@ fun StationsScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(groups) { grp ->
-                            val isSelected = (grp == "Alles" && selectedGroup == null) || (grp == selectedGroup)
+                            val isSelected = (grp == ALL_GENRES && selectedGroup == null) || (grp == selectedGroup)
                             FilterChip(
                                 selected = isSelected,
                                 onClick = {
-                                    viewModel.selectedGroup.value = if (grp == "Alles") null else grp
+                                    viewModel.selectedGroup.value = if (grp == ALL_GENRES) null else grp
                                 },
-                                label = { Text(grp) },
+                                label = { Text(genreLabel(grp)) },
                                 shape = RoundedCornerShape(12.dp)
                             )
                         }
@@ -172,7 +176,7 @@ fun StationsScreen(
             if (!favoritesOnly && !landscape) ExtendedFloatingActionButton(
                 onClick = onOpenImport,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Lijst Toevoegen") },
+                text = { Text(tr("Lijst Toevoegen", "Add List")) },
                 shape = RoundedCornerShape(16.dp)
             )
         },
@@ -196,9 +200,9 @@ fun StationsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = when {
-                            searchQuery.isNotEmpty() -> "Geen zenders gevonden voor '$searchQuery'"
-                            favoritesOnly -> "Nog geen favorieten"
-                            else -> "Geen zenders in de lijst"
+                            searchQuery.isNotEmpty() -> tr("Geen zenders gevonden voor '$searchQuery'", "No stations found for '$searchQuery'")
+                            favoritesOnly -> tr("Nog geen favorieten", "No favorites yet")
+                            else -> tr("Geen zenders in de lijst", "No stations in the list")
                         },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
@@ -206,9 +210,9 @@ fun StationsScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = if (favoritesOnly) {
-                            "Tik bij Stations op de ster naast een zender om hem hier te bewaren."
+                            tr("Tik bij Stations op de ster naast een zender om hem hier te bewaren.", "On Stations, tap the star next to a station to keep it here.")
                         } else {
-                            "Tik op 'Lijst Toevoegen' om een M3U-afspeellijst te importeren via een URL, bestand, tekst of Radio Browser."
+                            tr("Tik op 'Lijst Toevoegen' om een M3U-afspeellijst te importeren via een URL, bestand, tekst of Radio Browser.", "Tap 'Add List' to import an M3U playlist via a URL, file, text or Radio Browser.")
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -217,7 +221,7 @@ fun StationsScreen(
             }
         } else if (landscape) {
             StationGrid(
-                title = if (favoritesOnly) "Favorieten" else "Alle zenders",
+                title = if (favoritesOnly) tr("Favorieten", "Favorites") else tr("Alle zenders", "All stations"),
                 largeControls = largeControls,
                 stations = stations,
                 isCurrent = { playbackState.currentStationId == it.id },
@@ -294,7 +298,7 @@ fun StationsScreen(
                                     color = if (station.isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                 )
                                 Text(
-                                    text = if (!station.isEnabled) "Verborgen zender" else (station.genres().joinToString(" · ").ifBlank { "Algemeen" }),
+                                    text = if (!station.isEnabled) tr("Verborgen zender", "Hidden station") else station.genreText(),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = if (!station.isEnabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1
@@ -305,7 +309,7 @@ fun StationsScreen(
                             if (isCurrentlyPlaying && playbackState.isPlaying) {
                                 Icon(
                                     Icons.Default.GraphicEq,
-                                    contentDescription = "Nu aan het spelen",
+                                    contentDescription = tr("Nu aan het spelen", "Now playing"),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(end = 4.dp)
                                 )
@@ -318,7 +322,7 @@ fun StationsScreen(
                             ) {
                                 Icon(
                                     imageVector = if (station.isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
-                                    contentDescription = "Favoriet",
+                                    contentDescription = tr("Favoriet", "Favorite"),
                                     tint = if (station.isFavorite) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = if (largeControls) Modifier.size(30.dp) else Modifier
                                 )
@@ -331,7 +335,7 @@ fun StationsScreen(
                             ) {
                                 Icon(
                                     imageVector = if (station.isEnabled) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
-                                    contentDescription = if (station.isEnabled) "Verberg zender" else "Toon zender",
+                                    contentDescription = if (station.isEnabled) tr("Verberg zender", "Hide station") else tr("Toon zender", "Show station"),
                                     tint = if (station.isEnabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
                                     modifier = if (largeControls) Modifier.size(30.dp) else Modifier
                                 )
@@ -349,7 +353,7 @@ private fun SortButton(sortOrder: StationSort, onSelect: (StationSort) -> Unit) 
     var menuOpen by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { menuOpen = true }) {
-            Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sorteren")
+            Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = tr("Sorteren", "Sort"))
         }
         DropdownMenu(
             expanded = menuOpen,
@@ -410,7 +414,7 @@ private fun LandscapeTopBar(
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                     if (searchQuery.isEmpty()) {
                         Text(
-                            text = "Zoek op station of genre…",
+                            text = tr("Zoek op station of genre…", "Search by station or genre…"),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1
@@ -427,7 +431,7 @@ private fun LandscapeTopBar(
                 }
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { onSearch("") }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Clear, contentDescription = "Wissen", modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Clear, contentDescription = tr("Wissen", "Clear"), modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -440,11 +444,11 @@ private fun LandscapeTopBar(
                 modifier = Modifier.weight(1.4f)
             ) {
                 items(groups) { grp ->
-                    val isSelected = (grp == "Alles" && selectedGroup == null) || (grp == selectedGroup)
+                    val isSelected = (grp == ALL_GENRES && selectedGroup == null) || (grp == selectedGroup)
                     FilterChip(
                         selected = isSelected,
-                        onClick = { onGroup(if (grp == "Alles") null else grp) },
-                        label = { Text(grp) },
+                        onClick = { onGroup(if (grp == ALL_GENRES) null else grp) },
+                        label = { Text(genreLabel(grp)) },
                         shape = RoundedCornerShape(12.dp)
                     )
                 }
@@ -454,7 +458,7 @@ private fun LandscapeTopBar(
         SortButton(sortOrder, onSort)
         if (onAdd != null) {
             IconButton(onClick = onAdd) {
-                Icon(Icons.Default.Add, contentDescription = "Lijst toevoegen")
+                Icon(Icons.Default.Add, contentDescription = tr("Lijst toevoegen", "Add list"))
             }
         }
     }
@@ -649,7 +653,7 @@ private fun StationTile(
                     ) {
                         Icon(
                             Icons.Default.GraphicEq,
-                            contentDescription = "Nu aan het spelen",
+                            contentDescription = tr("Nu aan het spelen", "Now playing"),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(14.dp)
                         )
@@ -669,7 +673,7 @@ private fun StationTile(
                     ) {
                         Icon(
                             Icons.Outlined.VisibilityOff,
-                            contentDescription = "Verborgen zender",
+                            contentDescription = tr("Verborgen zender", "Hidden station"),
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(14.dp)
                         )
@@ -690,7 +694,7 @@ private fun StationTile(
                     ) {
                         Icon(
                             imageVector = if (station.isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
-                            contentDescription = if (station.isFavorite) "Uit favorieten halen" else "Toevoegen aan favorieten",
+                            contentDescription = if (station.isFavorite) tr("Uit favorieten halen", "Remove from favorites") else tr("Toevoegen aan favorieten", "Add to favorites"),
                             tint = if (station.isFavorite) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(24.dp)
                         )
@@ -707,7 +711,7 @@ private fun StationTile(
                     ) {
                         Icon(
                             Icons.Default.Star,
-                            contentDescription = "Favoriet",
+                            contentDescription = tr("Favoriet", "Favorite"),
                             tint = Color(0xFFF59E0B),
                             modifier = Modifier.size(14.dp)
                         )
@@ -733,7 +737,7 @@ private fun StationTile(
 
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
             DropdownMenuItem(
-                text = { Text(if (station.isFavorite) "Uit favorieten halen" else "Toevoegen aan favorieten") },
+                text = { Text(if (station.isFavorite) tr("Uit favorieten halen", "Remove from favorites") else tr("Toevoegen aan favorieten", "Add to favorites")) },
                 leadingIcon = {
                     Icon(
                         if (station.isFavorite) Icons.Outlined.StarBorder else Icons.Default.Star,
@@ -746,7 +750,7 @@ private fun StationTile(
                 }
             )
             DropdownMenuItem(
-                text = { Text(if (station.isEnabled) "Zender verbergen" else "Zender tonen") },
+                text = { Text(if (station.isEnabled) tr("Zender verbergen", "Hide station") else tr("Zender tonen", "Show station")) },
                 leadingIcon = {
                     Icon(
                         if (station.isEnabled) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,

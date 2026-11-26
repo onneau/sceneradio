@@ -58,6 +58,7 @@ import kotlinx.coroutines.runBlocking
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
+import io.github.onneau.sceneradio.i18n.tr
 
 data class PlaybackStateData(
     val currentStationId: Long? = null,
@@ -229,7 +230,7 @@ class RadioPlaybackService : MediaLibraryService() {
         }
 
         override fun onPlayerError(error: PlaybackException) {
-            val userMsg = "Stream fout: ${error.message ?: "Kan niet verbinden met de radio-stream."}"
+            val userMsg = tr("Stream fout: ${error.message ?: "Kan niet verbinden met de radio-stream."}", "Stream error: ${error.message ?: "Cannot connect to the radio stream."}")
             AppLog.i(
                 LogCategory.AFSPELEN,
                 "afspeelfout bij ${_playbackState.value.stationName.ifBlank { "(zonder naam)" }}: " +
@@ -366,7 +367,7 @@ class RadioPlaybackService : MediaLibraryService() {
 
     private fun favoriteButton(isFavorite: Boolean): CommandButton =
         CommandButton.Builder(if (isFavorite) CommandButton.ICON_HEART_FILLED else CommandButton.ICON_HEART_UNFILLED)
-            .setDisplayName(if (isFavorite) "Uit favorieten halen" else "Toevoegen aan favorieten")
+            .setDisplayName(if (isFavorite) tr("Uit favorieten halen", "Remove from favorites") else tr("Toevoegen aan favorieten", "Add to favorites"))
             .setSessionCommand(toggleFavoriteCommand)
             .build()
 
@@ -548,12 +549,12 @@ class RadioPlaybackService : MediaLibraryService() {
     private fun rootFolder(): MediaItem =
         folderItem(ROOT_ID, "SceneRadio", mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
 
-    private fun favoritesFolder() = folderItem(FOLDER_FAVORITES, "Favorieten", playableStyle = STYLE_GRID)
+    private fun favoritesFolder() = folderItem(FOLDER_FAVORITES, tr("Favorieten", "Favorites"), playableStyle = STYLE_GRID)
     private fun recentFolder() = folderItem(FOLDER_RECENT, "Recent", playableStyle = STYLE_GRID)
     private fun genresFolder() = folderItem(
         FOLDER_GENRES, "Genres", browsableStyle = STYLE_LIST, mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED
     )
-    private fun allFolder() = folderItem(FOLDER_ALL, "Alle zenders", playableStyle = STYLE_LIST)
+    private fun allFolder() = folderItem(FOLDER_ALL, tr("Alle zenders", "All stations"), playableStyle = STYLE_LIST)
 
     private fun genreFolder(genre: String) = folderItem(GENRE_PREFIX + genre, genre, playableStyle = STYLE_LIST)
 
@@ -870,7 +871,7 @@ class RadioPlaybackService : MediaLibraryService() {
             AppLog.i(LogCategory.AUTO, "${controller.packageName} vraagt om het hervatten van de laatste zender")
             return ioExecutor.submit(Callable<MediaSession.MediaItemsWithStartPosition> {
                 val station = defaultStation(stationDao())
-                    ?: throw IllegalStateException("Geen zender om te hervatten")
+                    ?: throw IllegalStateException(tr("Geen zender om te hervatten", "No station to resume"))
                 MediaSession.MediaItemsWithStartPosition(listOf(station.toPlayItem()), 0, C.TIME_UNSET)
             })
         }

@@ -70,11 +70,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.onneau.sceneradio.data.manage.LocalLogos
 import io.github.onneau.sceneradio.data.model.RadioStation
+import io.github.onneau.sceneradio.data.model.genreText
 import io.github.onneau.sceneradio.data.model.genres
 import io.github.onneau.sceneradio.data.repository.LOCAL_STATION_MARK
 import io.github.onneau.sceneradio.ui.ManageViewModel
 import io.github.onneau.sceneradio.ui.StreamTest
 import io.github.onneau.sceneradio.ui.components.StationLogo
+import io.github.onneau.sceneradio.i18n.tr
 
 // Gedeelde stukjes voor de beheerschermen.
 
@@ -82,7 +84,7 @@ import io.github.onneau.sceneradio.ui.components.StationLogo
 private fun ManageTitleBar(title: String, onBack: () -> Unit, actions: @Composable RowScope.() -> Unit = {}) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Terug")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Terug", "Back"))
         }
         Text(
             text = title,
@@ -114,14 +116,14 @@ private fun NoticeCard(text: String, onDismiss: () -> Unit) {
                 modifier = Modifier.weight(1f)
             )
             IconButton(onClick = onDismiss) {
-                Icon(Icons.Default.Close, contentDescription = "Sluiten")
+                Icon(Icons.Default.Close, contentDescription = tr("Sluiten", "Close"))
             }
         }
     }
 }
 
 private fun genreLine(station: RadioStation): String =
-    station.genres().joinToString(" · ").ifBlank { "Algemeen" }
+    station.genreText()
 
 // ---------------------------------------------------------------- Streams controleren
 
@@ -153,7 +155,7 @@ fun StreamCheckScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item { ManageTitleBar("Streams controleren", onBack) }
+        item { ManageTitleBar(tr("Streams controleren", "Check streams"), onBack) }
 
         item {
             Surface(
@@ -167,9 +169,9 @@ fun StreamCheckScreen(
                 ) {
                     Text(
                         text = when {
-                            state.running -> "Bezig: ${state.done} van ${state.total}"
-                            state.finished -> "Klaar: ${working.size} werken, ${failing.size} reageren niet"
-                            else -> "Gestopt na ${state.done} van ${state.total}"
+                            state.running -> tr("Bezig: ${state.done} van ${state.total}", "Working: ${state.done} of ${state.total}")
+                            state.finished -> tr("Klaar: ${working.size} werken, ${failing.size} reageren niet", "Done: ${working.size} working, ${failing.size} not responding")
+                            else -> tr("Gestopt na ${state.done} van ${state.total}", "Stopped after ${state.done} of ${state.total}")
                         },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
@@ -179,12 +181,12 @@ fun StreamCheckScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                     Text(
-                        text = "${state.done} van ${state.total} gecontroleerd · alleen HTTP 200/206 met audio telt als goed",
+                        text = tr("${state.done} van ${state.total} gecontroleerd · alleen HTTP 200/206 met audio telt als goed", "${state.done} of ${state.total} checked · only HTTP 200/206 with audio counts as good"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (state.running) {
-                        TextButton(onClick = { manage.stopStreamCheck() }) { Text("Stoppen") }
+                        TextButton(onClick = { manage.stopStreamCheck() }) { Text(tr("Stoppen", "Stop")) }
                     }
                 }
             }
@@ -193,7 +195,7 @@ fun StreamCheckScreen(
         if (failing.isNotEmpty()) {
             item {
                 Text(
-                    text = "Reageren niet (${failing.size})",
+                    text = tr("Reageren niet (${failing.size})", "Not responding (${failing.size})"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.error
@@ -223,7 +225,7 @@ fun StreamCheckScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = station?.name ?: "Onbekende zender",
+                                text = station?.name ?: tr("Onbekende zender", "Unknown station"),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
@@ -243,10 +245,10 @@ fun StreamCheckScreen(
                             }
                         }
                         if (station != null && station.isEnabled) {
-                            OutlinedButton(onClick = { manage.hideStation(station.id) }) { Text("Verberg") }
+                            OutlinedButton(onClick = { manage.hideStation(station.id) }) { Text(tr("Verberg", "Hide")) }
                         } else {
                             Text(
-                                text = "Verborgen",
+                                text = tr("Verborgen", "Hidden"),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -262,7 +264,7 @@ fun StreamCheckScreen(
                 enabled = !state.running,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Alles opnieuw controleren")
+                Text(tr("Alles opnieuw controleren", "Check everything again"))
             }
         }
 
@@ -282,14 +284,14 @@ fun StreamCheckScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Werken (${working.size})",
+                                text = tr("Werken (${working.size})", "Working (${working.size})"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             if (!showWorking) {
                                 Text(
-                                    text = "Tik om de lijst uit te klappen",
+                                    text = tr("Tik om de lijst uit te klappen", "Tap to expand the list"),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -306,7 +308,7 @@ fun StreamCheckScreen(
                 items(working, key = { it.key }) { entry ->
                     val station = byId[entry.key]
                     Text(
-                        text = "✓ ${station?.name ?: "Onbekende zender"} · ${entry.value.contentType}",
+                        text = tr("✓ ${station?.name ?: "Onbekende zender"} · ${entry.value.contentType}", "✓ ${station?.name ?: "Unknown station"} · ${entry.value.contentType}"),
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -351,13 +353,13 @@ fun LogoManagerScreen(
         ) {
             item {
                 ManageTitleBar(
-                    title = if (selected.isEmpty()) "Logo's beheren" else "${selected.size} geselecteerd",
+                    title = if (selected.isEmpty()) tr("Logo's beheren", "Manage logos") else tr("${selected.size} geselecteerd", "${selected.size} selected"),
                     onBack = { if (selected.isEmpty()) onBack() else manage.clearSelection() }
                 ) {
-                    TextButton(onClick = { manage.selectAll(visible.map { it.id }) }) { Text("Alles") }
+                    TextButton(onClick = { manage.selectAll(visible.map { it.id }) }) { Text(tr("Alles", "All")) }
                     if (selected.isNotEmpty()) {
                         IconButton(onClick = { manage.clearSelection() }) {
-                            Icon(Icons.Default.Close, contentDescription = "Selectie wissen")
+                            Icon(Icons.Default.Close, contentDescription = tr("Selectie wissen", "Clear selection"))
                         }
                     }
                 }
@@ -371,7 +373,7 @@ fun LogoManagerScreen(
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    placeholder = { Text("Zoek een zender…") },
+                    placeholder = { Text(tr("Zoek een zender…", "Find a station…")) },
                     singleLine = true,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -416,8 +418,8 @@ fun LogoManagerScreen(
                             )
                             Text(
                                 text = genreLine(station) + when {
-                                    LocalLogos.isLocal(station.logoUrl) -> " · eigen logo op dit toestel"
-                                    station.logoUrl.isNullOrBlank() -> " · geen logo"
+                                    LocalLogos.isLocal(station.logoUrl) -> tr(" · eigen logo op dit toestel", " · own logo on this device")
+                                    station.logoUrl.isNullOrBlank() -> tr(" · geen logo", " · no logo")
                                     else -> ""
                                 },
                                 style = MaterialTheme.typography.bodySmall,
@@ -448,7 +450,7 @@ fun LogoManagerScreen(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    Text("Logo koppelen aan ${selected.size} ${if (selected.size == 1) "zender" else "zenders"}")
+                    Text(tr("Logo koppelen aan ${selected.size} ${if (selected.size == 1) "zender" else "zenders"}", "Link logo to ${selected.size} ${if (selected.size == 1) "station" else "stations"}"))
                 }
             }
         }
@@ -495,7 +497,7 @@ private fun BulkLogoSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Logo koppelen aan $count ${if (count == 1) "zender" else "zenders"}",
+                text = tr("Logo koppelen aan $count ${if (count == 1) "zender" else "zenders"}", "Link logo to $count ${if (count == 1) "station" else "stations"}"),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Medium
             )
@@ -505,7 +507,7 @@ private fun BulkLogoSheet(
                 if (preview != null) {
                     Image(
                         bitmap = preview.asImageBitmap(),
-                        contentDescription = "Voorbeeld van het logo",
+                        contentDescription = tr("Voorbeeld van het logo", "Logo preview"),
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .size(80.dp)
@@ -526,9 +528,9 @@ private fun BulkLogoSheet(
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = if (preview != null) {
-                        "Voorbeeld: $firstName wordt JPEG, max. 500 px"
+                        tr("Voorbeeld: $firstName wordt JPEG, max. 500 px", "Example: $firstName becomes JPEG, max. 500 px")
                     } else {
-                        "Kies een afbeelding. Die wordt omgezet naar JPEG, max. 500 px."
+                        tr("Kies een afbeelding. Die wordt omgezet naar JPEG, max. 500 px.", "Choose an image. It is converted to JPEG, max. 500 px.")
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -537,9 +539,9 @@ private fun BulkLogoSheet(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledTonalButton(onClick = { picker.launch("image/*") }, enabled = !busy) {
-                    Text("Kies afbeelding…")
+                    Text(tr("Kies afbeelding…", "Choose image…"))
                 }
-                OutlinedButton(onClick = { showUrl = !showUrl }, enabled = !busy) { Text("Plak URL") }
+                OutlinedButton(onClick = { showUrl = !showUrl }, enabled = !busy) { Text(tr("Plak URL", "Paste URL")) }
             }
 
             if (showUrl) {
@@ -555,7 +557,7 @@ private fun BulkLogoSheet(
                     onClick = { manage.loadBulkLogoFromUrl(urlText) },
                     enabled = urlText.isNotBlank() && !busy
                 ) {
-                    Text("Ophalen")
+                    Text(tr("Ophalen", "Fetch"))
                 }
             }
 
@@ -583,10 +585,10 @@ private fun BulkLogoSheet(
                     if (busy) {
                         CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("Koppelen")
+                        Text(tr("Koppelen", "Link"))
                     }
                 }
-                OutlinedButton(onClick = onDismiss, enabled = !busy) { Text("Annuleren") }
+                OutlinedButton(onClick = onDismiss, enabled = !busy) { Text(tr("Annuleren", "Cancel")) }
             }
         }
     }
@@ -616,7 +618,7 @@ fun StationPickerScreen(
         contentPadding = PaddingValues(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        item { ManageTitleBar("Zender toevoegen of bewerken", onBack) }
+        item { ManageTitleBar(tr("Zender toevoegen of bewerken", "Add or edit station"), onBack) }
 
         notice?.let { text ->
             item { NoticeCard(text = text, onDismiss = { manage.clearNotice() }) }
@@ -632,7 +634,7 @@ fun StationPickerScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Nieuwe zender toevoegen")
+                Text(tr("Nieuwe zender toevoegen", "Add new station"))
             }
         }
 
@@ -640,7 +642,7 @@ fun StationPickerScreen(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Of zoek een zender om te bewerken…") },
+                placeholder = { Text(tr("Of zoek een zender om te bewerken…", "Or find a station to edit…")) },
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -681,7 +683,7 @@ fun StationPickerScreen(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = genreLine(station) + if (station.format == LOCAL_STATION_MARK) " · eigen zender" else "",
+                            text = genreLine(station) + if (station.format == LOCAL_STATION_MARK) tr(" · eigen zender", " · own station") else "",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -735,17 +737,17 @@ fun StationFormScreen(
         contentPadding = PaddingValues(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item { ManageTitleBar(if (isNew) "Zender toevoegen" else "Zender bewerken", onBack) }
+        item { ManageTitleBar(if (isNew) tr("Zender toevoegen", "Add station") else tr("Zender bewerken", "Edit station"), onBack) }
 
         item {
             OutlinedTextField(
                 value = form.name,
                 onValueChange = { value -> manage.updateForm { it.copy(name = value) } },
-                label = { Text("Naam") },
+                label = { Text(tr("Naam", "Name")) },
                 singleLine = true,
                 enabled = isNew,
                 supportingText = if (isNew) null else {
-                    { Text("De naam kan niet worden gewijzigd: logo en controle hangen eraan.") }
+                    { Text(tr("De naam kan niet worden gewijzigd: logo en controle hangen eraan.", "The name cannot be changed: logo and check depend on it.")) }
                 },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -755,7 +757,7 @@ fun StationFormScreen(
             OutlinedTextField(
                 value = form.url,
                 onValueChange = { value -> manage.updateForm { it.copy(url = value) } },
-                label = { Text("Stream-URL") },
+                label = { Text(tr("Stream-URL", "Stream URL")) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 modifier = Modifier.fillMaxWidth()
@@ -769,7 +771,7 @@ fun StationFormScreen(
                     onValueChange = { value -> manage.updateForm { it.copy(genres = value) } },
                     label = { Text("Genres") },
                     singleLine = true,
-                    supportingText = { Text("Meerdere genres scheid je met ;  bijvoorbeeld Pop;Dance. Het eerste is het hoofdgenre.") },
+                    supportingText = { Text(tr("Meerdere genres scheid je met ;  bijvoorbeeld Pop;Dance. Het eerste is het hoofdgenre.", "Separate multiple genres with ;  for example Pop;Dance. The first is the main genre.")) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 if (commonGenres.isNotEmpty()) {
@@ -811,7 +813,7 @@ fun StationFormScreen(
                         if (preview != null) {
                             Image(
                                 bitmap = preview.asImageBitmap(),
-                                contentDescription = "Nieuw logo",
+                                contentDescription = tr("Nieuw logo", "New logo"),
                                 contentScale = ContentScale.Fit,
                                 modifier = Modifier
                                     .size(56.dp)
@@ -821,7 +823,7 @@ fun StationFormScreen(
                         } else {
                             StationLogo(
                                 logoUrl = form.existingLogoUrl,
-                                stationName = form.name.ifBlank { "Nieuwe zender" },
+                                stationName = form.name.ifBlank { tr("Nieuwe zender", "New station") },
                                 size = 56.dp,
                                 shape = RoundedCornerShape(10.dp),
                                 imageBackground = Color.White,
@@ -831,19 +833,19 @@ fun StationFormScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = when {
-                                preview != null -> "Nieuw logo gekozen"
-                                form.existingLogoUrl.isNullOrBlank() -> "Nog geen logo"
-                                else -> "Huidig logo"
+                                preview != null -> tr("Nieuw logo gekozen", "New logo chosen")
+                                form.existingLogoUrl.isNullOrBlank() -> tr("Nog geen logo", "No logo yet")
+                                else -> tr("Huidig logo", "Current logo")
                             },
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )
-                        OutlinedButton(onClick = { picker.launch("image/*") }, enabled = !busy) { Text("Wijzigen") }
+                        OutlinedButton(onClick = { picker.launch("image/*") }, enabled = !busy) { Text(tr("Wijzigen", "Change")) }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        TextButton(onClick = { showLogoUrl = !showLogoUrl }) { Text("Plak URL") }
+                        TextButton(onClick = { showLogoUrl = !showLogoUrl }) { Text(tr("Plak URL", "Paste URL")) }
                         if (logo != null) {
-                            TextButton(onClick = { manage.clearFormLogo() }) { Text("Nieuw logo wissen") }
+                            TextButton(onClick = { manage.clearFormLogo() }) { Text(tr("Nieuw logo wissen", "Clear new logo")) }
                         }
                     }
                     if (showLogoUrl) {
@@ -859,7 +861,7 @@ fun StationFormScreen(
                             onClick = { manage.loadFormLogoFromUrl(logoUrlText) },
                             enabled = logoUrlText.isNotBlank()
                         ) {
-                            Text("Ophalen")
+                            Text(tr("Ophalen", "Fetch"))
                         }
                     }
                     logoMessage?.let {
@@ -882,7 +884,7 @@ fun StationFormScreen(
                 onClick = { manage.testFormStream() },
                 enabled = form.url.isNotBlank() && test !is StreamTest.Running
             ) {
-                Text("Stream testen")
+                Text(tr("Stream testen", "Test stream"))
             }
         }
 
@@ -891,7 +893,7 @@ fun StationFormScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text("Bezig met testen…", style = MaterialTheme.typography.bodyMedium)
+                    Text(tr("Bezig met testen…", "Testing…"), style = MaterialTheme.typography.bodyMedium)
                 }
             }
             is StreamTest.Done -> item {
@@ -907,9 +909,9 @@ fun StationFormScreen(
                 ) {
                     Text(
                         text = if (result.ok) {
-                            "✓ Werkt · HTTP ${result.status} · ${result.contentType}"
+                            tr("✓ Werkt · HTTP ${result.status} · ${result.contentType}", "✓ Works · HTTP ${result.status} · ${result.contentType}")
                         } else {
-                            "✕ Werkt niet · ${result.error}"
+                            tr("✕ Werkt niet · ${result.error}", "✕ Does not work · ${result.error}")
                         },
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
@@ -944,7 +946,7 @@ fun StationFormScreen(
                 if (busy) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("Opslaan")
+                    Text(tr("Opslaan", "Save"))
                 }
             }
         }

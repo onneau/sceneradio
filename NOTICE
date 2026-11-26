@@ -1,38 +1,40 @@
 Required Notice: Copyright (c) 2026 Onno (https://github.com/onneau)
 
-SceneRadio is een hobbyproject van Onno.
-Licentie: PolyForm Noncommercial License 1.0.0 (zie het bestand LICENSE).
+Nederlandse versie: NOTICE.nl.md
 
-In gewone woorden (de licentietekst zelf is leidend):
-- Je mag de software gebruiken, aanpassen, forken en delen voor niet-commerciële doeleinden:
-  privé, hobby, onderzoek, onderwijs en goede doelen.
-- Commercieel gebruik is niet toegestaan.
-- Geef je het door (ook een aangepaste versie), geef dan dit bestand (NOTICE) en LICENSE mee. Zo blijft
-  de naam van de maker erbij staan. De "Required Notice"-regel hierboven moet erbij blijven.
-- Het idee en de uitwerking zijn van Onno. Een licentie beschermt de code, het ontwerp en de teksten,
-  niet het idee zelf.
-- Bijdragen (pull requests) vallen onder dezelfde licentie.
+SceneRadio is a hobby project by Onno.
+License: PolyForm Noncommercial License 1.0.0 (see the file LICENSE).
 
-Geen verband met zenders of rechthebbenden
+In plain words (the license text itself prevails):
+- You may use, modify, fork and share the software for non-commercial purposes:
+  private, hobby, research, education and charities.
+- Commercial use is not allowed.
+- If you pass it on (including a modified version), include this file (NOTICE) and LICENSE. This keeps
+  the creator's name with it. The "Required Notice" line above must stay.
+- The idea and its execution are by Onno. A license protects the code, the design and the texts,
+  not the idea itself.
+- Contributions (pull requests) fall under the same license.
+
+No connection with stations or rights holders
+---------------------------------------------
+SceneRadio is in no way affiliated with, sponsored by or endorsed by the radio stations, broadcasters or
+companies whose name, logo or stream appears in the station list. All names and logos are the property of
+their owners and are only used to make a station recognizable. This project does not contain or distribute
+any audio itself: the streams are fetched directly from the stations.
+If a rights holder wants a name, logo or stream removed from here or from the station list
+(https://github.com/onneau/sceneradio-m3u), report it via GitHub
+(https://github.com/onneau); it will be removed as soon as possible.
+
+Parts that are not covered by this license
 ------------------------------------------
-SceneRadio is op geen enkele manier verbonden aan, gesponsord door of goedgekeurd door de radiozenders,
-omroepen of bedrijven waarvan de naam, het logo of de stream in de zenderlijst voorkomt. Alle namen en
-logo's zijn eigendom van hun eigenaren en worden alleen gebruikt om een zender herkenbaar te maken.
-Dit project bevat en verspreidt zelf geen audio: de streams worden rechtstreeks bij de zenders opgehaald.
-Wil een rechthebbende dat een naam, logo of stream hier of in de zenderlijst
-(https://github.com/onneau/sceneradio-m3u) verdwijnt, meld dat dan via GitHub
-(https://github.com/onneau); het wordt dan zo snel mogelijk verwijderd.
-
-Onderdelen die niet onder deze licentie vallen
-----------------------------------------------
-- De Amiga-kleurenlettertypes Metallix, Forest en Scopex (app/src/main/assets/fonts/) komen uit Stone
-  Oakvalley's Amiga ColorFonts Generator (SOCFG). De oorspronkelijke makers en hun voorwaarden zijn niet
-  vastgesteld. Ze vallen niet onder de licentie van dit project. Het app-icoon (de S) en de TV-banner zijn met
-  het Scopex-lettertype getekend.
-- Bibliotheken (AndroidX Compose, Media3, Room en DataStore, Coil, OkHttp, Gson, KSP) hebben elk hun eigen
-  licentie (Apache License 2.0). Ze zitten niet in deze repository, alleen in de gebouwde app.
-- Zenderlogo's die de app via de zenderlijst ophaalt, zijn van hun eigenaren (zie hierboven).
-- Hoezen en foto's van artiesten die de app op verzoek van de gebruiker ophaalt (Cover Art Archive,
-  Wikimedia Commons), zijn van hun makers of rechthebbenden en worden niet in deze repository bewaard, alleen
-  tijdelijk in de cache van het apparaat. Foto's op Wikimedia Commons hebben elk een eigen licentie
-  (bijvoorbeeld CC BY-SA, met bronvermelding).
+- The Amiga color fonts Metallix, Forest and Scopex (app/src/main/assets/fonts/) come from Stone
+  Oakvalley's Amiga ColorFonts Generator (SOCFG). The original creators and their terms have not been
+  established. They are not covered by this project's license. The app icon (the S) and the TV banner were
+  drawn with the Scopex font.
+- Libraries (AndroidX Compose, Media3, Room and DataStore, Coil, OkHttp, Gson, KSP) each have their own
+  license (Apache License 2.0). They are not in this repository, only in the built app.
+- Station logos that the app fetches via the station list belong to their owners (see above).
+- Covers and artist photos that the app fetches at the user's request (Cover Art Archive,
+  Wikimedia Commons) belong to their creators or rights holders and are not kept in this repository, only
+  temporarily in the device's cache. Photos on Wikimedia Commons each have their own license
+  (for example CC BY-SA, with attribution).

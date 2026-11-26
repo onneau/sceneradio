@@ -45,15 +45,22 @@ import io.github.onneau.sceneradio.ui.screens.ImportDialog
 import io.github.onneau.sceneradio.ui.screens.PlayerScreen
 import io.github.onneau.sceneradio.ui.screens.SettingsScreen
 import io.github.onneau.sceneradio.ui.screens.StationsScreen
+import io.github.onneau.sceneradio.i18n.tr
 import io.github.onneau.sceneradio.ui.theme.SceneRadioTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
-sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    object Player : Screen("player", "Speler", Icons.Default.Radio)
-    object Stations : Screen("stations", "Stations", Icons.AutoMirrored.Filled.FormatListBulleted)
-    object Favorites : Screen("favorites", "Favorieten", Icons.Default.Star)
-    object Settings : Screen("settings", "Instellingen", Icons.Default.Settings)
+sealed class Screen(val route: String, private val nl: String, private val en: String, val icon: ImageVector) {
+    /** De naam in de taal van de app; leest de taalkeuze, dus het menu past zich meteen aan. */
+    val title: String get() = tr(nl, en)
+
+    /** De vaste Nederlandse naam voor het logboek, onafhankelijk van de gekozen taal. */
+    val logName: String get() = nl
+
+    object Player : Screen("player", "Speler", "Player", Icons.Default.Radio)
+    object Stations : Screen("stations", "Stations", "Stations", Icons.AutoMirrored.Filled.FormatListBulleted)
+    object Favorites : Screen("favorites", "Favorieten", "Favorites", Icons.Default.Star)
+    object Settings : Screen("settings", "Instellingen", "Settings", Icons.Default.Settings)
 }
 
 // Liggend en tijdens het afspelen: zoveel milliseconden niets aanraken en de menu's verdwijnen.
@@ -126,7 +133,7 @@ class MainActivity : ComponentActivity() {
                 }
                 val canHideMenu = isLandscape && playbackState.isPlaying && currentScreen == Screen.Player
                 var immersive by remember { mutableStateOf(false) }
-                LaunchedEffect(currentScreen) { AppLog.logTab(currentScreen.title) }
+                LaunchedEffect(currentScreen) { AppLog.logTab(currentScreen.logName) }
                 // Wordt niet in de compositie gelezen, zodat aanrakingen (ook scrollen) niets opnieuw laten tekenen.
                 var lastTouchMs by remember { mutableLongStateOf(0L) }
 

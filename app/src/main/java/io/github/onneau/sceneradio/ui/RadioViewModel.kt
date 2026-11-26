@@ -21,6 +21,7 @@ import io.github.onneau.sceneradio.data.log.LogCategory
 import io.github.onneau.sceneradio.data.api.RadioBrowserStationItem
 import io.github.onneau.sceneradio.data.local.DefaultPlaylistPrefs
 import io.github.onneau.sceneradio.data.local.UpdatePrefs
+import io.github.onneau.sceneradio.data.model.ALL_GENRES
 import io.github.onneau.sceneradio.data.model.Playlist
 import io.github.onneau.sceneradio.data.model.genres
 import io.github.onneau.sceneradio.data.model.RadioStation
@@ -42,14 +43,18 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import io.github.onneau.sceneradio.i18n.tr
 
 // Manieren om de zenderlijst te sorteren.
-enum class StationSort(val key: String, val label: String) {
-    LIST_ORDER("list", "Lijstvolgorde"),
-    NAME_ASC("name_asc", "Naam A–Z"),
-    NAME_DESC("name_desc", "Naam Z–A"),
-    GENRE("genre", "Genre"),
-    FAVORITES_FIRST("favorites", "Favorieten eerst");
+enum class StationSort(val key: String, private val nl: String, private val en: String) {
+    LIST_ORDER("list", "Lijstvolgorde", "List order"),
+    NAME_ASC("name_asc", "Naam A–Z", "Name A–Z"),
+    NAME_DESC("name_desc", "Naam Z–A", "Name Z–A"),
+    GENRE("genre", "Genre", "Genre"),
+    FAVORITES_FIRST("favorites", "Favorieten eerst", "Favorites first");
+
+    /** De naam in de taal van de app; leest de taalkeuze op het moment dat hij getoond wordt. */
+    val label: String get() = tr(nl, en)
 
     companion object {
         fun fromKey(key: String?): StationSort = values().firstOrNull { it.key == key } ?: LIST_ORDER
@@ -128,7 +133,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
     ) { stations, query, group, playlistId, sort ->
         val filtered = stations.filter { st ->
             // Een zender kan meerdere genres hebben ("Pop;Dance") en staat onder elk genre.
-            val matchesGroup = group == null || group == "Alles" ||
+            val matchesGroup = group == null || group == ALL_GENRES ||
                 st.genres().any { it.equals(group, ignoreCase = true) }
             val matchesPlaylist = playlistId == null || st.playlistId == playlistId
             matchesQuery(st, query) && matchesGroup && matchesPlaylist
@@ -148,6 +153,13 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
     fun setSortOrder(sort: StationSort) {
         sortOrder.value = sort
         viewModelScope.launch { repository.preferences.setStationSort(sort.key) }
+    }
+
+    /** Na het terugzetten van een back-up: de sortering opnieuw uit de instellingen lezen. */
+    fun reloadSortOrder() {
+        viewModelScope.launch {
+            sortOrder.value = StationSort.fromKey(repository.preferences.stationSortFlow.first())
+        }
     }
 
     val themeMode: StateFlow<String> = repository.preferences.themeModeFlow
@@ -402,7 +414,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
         Log.i(TAG, "Controle gestart (handmatig=$force)")
         AppLog.v(LogCategory.NETWERK, "zenderlijst op GitHub controleren (${if (force) "handmatig" else "automatisch"})")
         isCheckingPlaylist.value = true
-        if (force) defaultPlaylistStatus.value = "Bezig met controleren…"
+        if (force) defaultPlaylistStatus.value = tr("Bezig met controleren…", "Checking…")
         val result = RadioApiService.fetchDefaultPlaylist()
         isCheckingPlaylist.value = false
 
@@ -415,7 +427,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
             when {
                 key == prefs.sha && hasPlaylist -> {
                     defaultPlaylistUpdate.value = null
-                    defaultPlaylistStatus.value = "De zenderlijst is actueel."
+                    defaultPlaylistStatus.value = tr("De zenderlijst is actueel.", "The station list is up to date.")
                 }
                 !force && key == prefs.dismissedSha -> {
                     // Deze versie is eerder genegeerd; niet opnieuw opdringen.
@@ -427,7 +439,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
                         content = file.text,
                         isFirstImport = prefs.sha.isBlank() || !hasPlaylist
                     )
-                    defaultPlaylistStatus.value = "Er staat een nieuwe zenderlijst klaar."
+                    defaultPlaylistStatus.value = tr("Er staat een nieuwe zenderlijst klaar.", "A new station list is available.")
                 }
             }
         }.onFailure { error ->
@@ -435,7 +447,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
             Log.w(TAG, "Controle mislukt, laatste lokale lijst blijft in gebruik: ${error.message}")
             AppLog.v(LogCategory.NETWERK, "zenderlijst controleren mislukt: ${error.message ?: error.javaClass.simpleName}")
             if (force) {
-                defaultPlaylistStatus.value = error.message ?: "Controleren is mislukt."
+                defaultPlaylistStatus.value = error.message ?: tr("Controleren is mislukt.", "Checking failed.")
             }
         }
     }
@@ -459,26 +471,26 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
         val update = defaultPlaylistUpdate.value ?: return
         if (isApplyingPlaylist.value) return
         isApplyingPlaylist.value = true
-        defaultPlaylistStatus.value = "Bezig met bijwerken…"
+        defaultPlaylistStatus.value = tr("Bezig met bijwerken…", "Updating…")
         try {
             val result = withContext(Dispatchers.IO) {
                 repository.applyDefaultPlaylist(update.content, update.sha)
             }
             Log.i(TAG, "Bijgewerkt naar ${update.sha.take(8)}: totaal=${result.total}, nieuw=${result.added}, gewijzigd=${result.updated}, verwijderd=${result.removed}")
             if (result.total == 0) {
-                defaultPlaylistStatus.value = "Geen zenders gevonden in de lijst; er is niets gewijzigd."
+                defaultPlaylistStatus.value = tr("Geen zenders gevonden in de lijst; er is niets gewijzigd.", "No stations found in the list; nothing was changed.")
             } else {
                 repository.preferences.setDefaultPlaylistApplied(update.key, System.currentTimeMillis())
                 defaultPlaylistUpdate.value = null
                 defaultPlaylistStatus.value = if (update.isFirstImport) {
-                    "${result.total} zenders toegevoegd."
+                    tr("${result.total} zenders toegevoegd.", "${result.total} stations added.")
                 } else {
-                    "Bijgewerkt: ${result.added} nieuw, ${result.updated} gewijzigd, ${result.removed} verwijderd."
+                    tr("Bijgewerkt: ${result.added} nieuw, ${result.updated} gewijzigd, ${result.removed} verwijderd.", "Updated: ${result.added} new, ${result.updated} changed, ${result.removed} removed.")
                 }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Bijwerken mislukt", e)
-            defaultPlaylistStatus.value = "Bijwerken mislukt: ${e.message ?: "onbekende fout"}"
+            defaultPlaylistStatus.value = tr("Bijwerken mislukt: ${e.message ?: "onbekende fout"}", "Update failed: ${e.message ?: "unknown error"}")
         } finally {
             isApplyingPlaylist.value = false
         }
@@ -504,7 +516,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
 
         isCheckingUpdate.value = true
         updateError.value = null
-        if (force) updateStatus.value = "Bezig met controleren…"
+        if (force) updateStatus.value = tr("Bezig met controleren…", "Checking…")
         AppLog.i(LogCategory.UPDATE, if (force) "handmatig zoeken naar een nieuwe versie" else "automatisch zoeken naar een nieuwe versie")
         val result = AppUpdater.fetchLatest()
         isCheckingUpdate.value = false
@@ -515,12 +527,12 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
                 Log.i(UPDATE_TAG, "Nieuwe versie ${info.version} gevonden (jij hebt ${AppVersion.NUMBER})")
                 AppLog.i(LogCategory.UPDATE, "nieuwe versie ${info.version} gevonden (deze app is ${AppVersion.NUMBER})")
                 appUpdate.value = info
-                updateStatus.value = "Update beschikbaar: versie ${info.version}"
+                updateStatus.value = tr("Update beschikbaar: versie ${info.version}", "Update available: version ${info.version}")
                 // Automatisch alleen laten zien als je deze versie nog niet met "Later" hebt weggedrukt.
                 if (!force && info.version != prefs.dismissedVersion) showUpdateDialog.value = true
             } else {
                 appUpdate.value = null
-                updateStatus.value = "Je hebt de nieuwste versie."
+                updateStatus.value = tr("Je hebt de nieuwste versie.", "You have the latest version.")
                 AppLog.i(
                     LogCategory.UPDATE,
                     "geen nieuwe versie gevonden (nieuwste op GitHub: ${info?.version ?: "geen release met een APK"}, deze app: ${AppVersion.NUMBER})"
@@ -529,7 +541,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
         }.onFailure { error ->
             Log.w(UPDATE_TAG, "Update-controle mislukt: ${error.message}")
             AppLog.i(LogCategory.UPDATE, "zoeken naar een nieuwe versie mislukt: ${error.message ?: error.javaClass.simpleName}")
-            updateStatus.value = "Controleren mislukt: ${error.message ?: "onbekende fout"}"
+            updateStatus.value = tr("Controleren mislukt: ${error.message ?: "onbekende fout"}", "Checking failed: ${error.message ?: "unknown error"}")
         }
     }
 
@@ -592,7 +604,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
                 Log.w(UPDATE_TAG, "Downloaden mislukt: ${error.message}")
                 AppLog.i(LogCategory.UPDATE, "downloaden mislukt: ${error.message ?: error.javaClass.simpleName}")
                 updateDownload.value = UpdateDownload.Idle
-                updateError.value = error.message ?: "Downloaden mislukt."
+                updateError.value = error.message ?: tr("Downloaden mislukt.", "Download failed.")
             }
         }
     }
@@ -621,11 +633,11 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             result.onSuccess { saved ->
-                updateSavedMessage.value = "✓ Opgeslagen in ${saved.place} als ${saved.name}. " +
-                    "Open het met de bestandsbeheerder van je apparaat en kies Installeren."
+                updateSavedMessage.value = tr("✓ Opgeslagen in ${saved.place} als ${saved.name}. ", "✓ Saved in ${saved.place} as ${saved.name}. ") +
+                    tr("Open het met de bestandsbeheerder van je apparaat en kies Installeren.", "Open it with your device's file manager and choose Install.")
             }.onFailure { error ->
                 Log.w(UPDATE_TAG, "Opslaan in Downloads mislukt: ${error.message}")
-                updateError.value = "Opslaan in Downloads mislukt: ${error.message ?: "onbekende fout"}"
+                updateError.value = tr("Opslaan in Downloads mislukt: ${error.message ?: "onbekende fout"}", "Saving to Downloads failed: ${error.message ?: "unknown error"}")
             }
         }
     }
@@ -655,7 +667,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val stations = stationsForExport(playlistId)
             if (stations.isEmpty()) {
-                exportMessage.value = "Deze lijst heeft geen zenders om te downloaden."
+                exportMessage.value = tr("Deze lijst heeft geen zenders om te downloaden.", "This list has no stations to download.")
                 return@launch
             }
             val text = M3uWriter.write(stations)
@@ -664,8 +676,8 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
                 DownloadsSaver.saveText(getApplication<Application>(), name, "audio/x-mpegurl", text)
             }
             exportMessage.value = result.fold(
-                onSuccess = { "✓ Opgeslagen in ${it.place} als ${it.name} (${stations.size} zenders)" },
-                onFailure = { "Opslaan mislukt: ${it.message ?: "onbekende fout"}" }
+                onSuccess = { tr("✓ Opgeslagen in ${it.place} als ${it.name} (${stations.size} zenders)", "✓ Saved in ${it.place} as ${it.name} (${stations.size} stations)") },
+                onFailure = { tr("Opslaan mislukt: ${it.message ?: "onbekende fout"}", "Saving failed: ${it.message ?: "unknown error"}") }
             )
         }
     }
@@ -674,7 +686,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun m3uShareIntent(playlistId: Long?, label: String): Intent? {
         val stations = stationsForExport(playlistId)
         if (stations.isEmpty()) {
-            exportMessage.value = "Deze lijst heeft geen zenders om te delen."
+            exportMessage.value = tr("Deze lijst heeft geen zenders om te delen.", "This list has no stations to share.")
             return null
         }
         val app = getApplication<Application>()
@@ -690,9 +702,9 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
                     putExtra(Intent.EXTRA_SUBJECT, file.name)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                Intent.createChooser(send, "Zenderlijst delen").apply { addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+                Intent.createChooser(send, tr("Zenderlijst delen", "Share station list")).apply { addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
             } catch (e: Exception) {
-                exportMessage.value = "Delen mislukt: ${e.message ?: "onbekende fout"}"
+                exportMessage.value = tr("Delen mislukt: ${e.message ?: "onbekende fout"}", "Sharing failed: ${e.message ?: "unknown error"}")
                 null
             }
         }
@@ -735,23 +747,23 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun importResultMessage(count: Int): String =
         if (count == 0) {
-            "Geen zenders gevonden in deze afspeellijst."
+            tr("Geen zenders gevonden in deze afspeellijst.", "No stations found in this playlist.")
         } else {
-            "$count zenders succesvol geïmporteerd!"
+            tr("$count zenders succesvol geïmporteerd!", "$count stations imported successfully!")
         }
 
     // M3U Import via URL of tekst
     fun importM3uFromUrl(url: String, playlistName: String) {
         viewModelScope.launch {
             isImporting.value = true
-            importMessage.value = "Bezig met ophalen van afspeellijst…"
+            importMessage.value = tr("Bezig met ophalen van afspeellijst…", "Fetching playlist…")
             val fetchResult = RadioApiService.fetchUrlContent(url)
             if (fetchResult.isSuccess) {
                 val content = fetchResult.getOrNull() ?: ""
                 val count = repository.importM3uContent(content, playlistName, url)
                 importMessage.value = importResultMessage(count)
             } else {
-                importMessage.value = fetchResult.exceptionOrNull()?.message ?: "Fout bij downloaden"
+                importMessage.value = fetchResult.exceptionOrNull()?.message ?: tr("Fout bij downloaden", "Download error")
             }
             isImporting.value = false
         }

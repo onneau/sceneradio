@@ -21,12 +21,15 @@ import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import io.github.onneau.sceneradio.i18n.Lang
+import io.github.onneau.sceneradio.i18n.tr
 
 /** Een nieuwere versie van de app die als GitHub Release klaarstaat. */
 data class UpdateInfo(
     val version: String,
-    // De regels van "Wat is nieuw", uit CHANGELOG.md (de workflow zet ze in de Release).
-    val notes: List<String>,
+    // De regels van "Wat is nieuw" per taal, uit CHANGELOG.md (de workflow zet ze in de Release).
+    val notesNl: List<String>,
+    val notesEn: List<String>,
     // ISO-tijdstip van GitHub, bijvoorbeeld 2026-11-03T14:30:00Z.
     val publishedAt: String,
     val assetId: Long,
@@ -34,7 +37,10 @@ data class UpdateInfo(
     val sizeBytes: Long,
     // SHA-256 van de APK zoals GitHub die meldt (kan ontbreken).
     val sha256: String?
-)
+) {
+    /** De regels in de taal van de app. Leest de taalkeuze, dus een taalwissel werkt ook op een melding die al klaarstaat. */
+    val notes: List<String> get() = if (Lang.isEnglish) notesEn else notesNl
+}
 
 /** Waar de app zijn updates vandaan haalt: de Releases van de openbare repository (geen token nodig). */
 object AppUpdateSource {
@@ -103,9 +109,9 @@ object AppUpdater {
                 if (!response.isSuccessful) {
                     return@withContext Result.failure(Exception(httpMessage(response.code, response.header("X-RateLimit-Remaining"))))
                 }
-                val body = response.body ?: return@withContext Result.failure(Exception("Leeg antwoord van GitHub"))
+                val body = response.body ?: return@withContext Result.failure(Exception(tr("Leeg antwoord van GitHub", "Empty response from GitHub")))
                 if (body.source().request(MAX_JSON_BYTES + 1)) {
-                    return@withContext Result.failure(Exception("Onverwacht groot antwoord van GitHub"))
+                    return@withContext Result.failure(Exception(tr("Onverwacht groot antwoord van GitHub", "Unexpectedly large response from GitHub")))
                 }
                 Result.success(parseRelease(body.string()))
             }
@@ -134,9 +140,11 @@ object AppUpdater {
             .takeIf { it.startsWith("sha256:") }
             ?.removePrefix("sha256:")
             ?.lowercase()
+        val notes = parseNotes(json.optString("body"))
         return UpdateInfo(
             version = version,
-            notes = parseNotes(json.optString("body")),
+            notesNl = notes.first,
+            notesEn = notes.second,
             publishedAt = json.optString("published_at"),
             assetId = found.optLong("id"),
             assetName = found.optString("name"),
@@ -145,16 +153,44 @@ object AppUpdater {
         )
     }
 
-    /** De opsommingstekens uit de Release-tekst; zonder opsomming de gewone regels (zonder koppen). */
-    internal fun parseNotes(body: String): List<String> {
-        if (body.isBlank() || body == "null") return emptyList()
-        val lines = body.lines().map { it.trim() }
+    /**
+     * De regels uit de Release-tekst, als (Nederlands, Engels). Staan er koppen "### Nederlands" en "### English"
+     * in, dan krijgt elke taal zijn eigen blok. Een oudere Release zonder koppen geldt voor beide talen, en
+     * ontbreekt één blok, dan valt die taal terug op het andere.
+     */
+    internal fun parseNotes(body: String): Pair<List<String>, List<String>> {
+        if (body.isBlank() || body == "null") return emptyList<String>() to emptyList()
+        val nl = mutableListOf<String>()
+        val en = mutableListOf<String>()
+        val all = mutableListOf<String>()
+        var current: MutableList<String>? = null
+        var hasLanguageBlocks = false
+        for (raw in body.lines()) {
+            val line = raw.trim()
+            if (line.startsWith("#")) {
+                when (line.trimStart('#').trim().lowercase()) {
+                    "nederlands", "dutch" -> { current = nl; hasLanguageBlocks = true }
+                    "english", "engels" -> { current = en; hasLanguageBlocks = true }
+                }
+                continue
+            }
+            if (line.isEmpty()) continue
+            all += line
+            current?.add(line)
+        }
+        if (!hasLanguageBlocks) return notesLines(all).let { it to it }
+        val dutch = notesLines(nl)
+        val english = notesLines(en)
+        return (dutch.ifEmpty { english }) to (english.ifEmpty { dutch })
+    }
+
+    /** De opsommingstekens; zonder opsomming de gewone regels. */
+    private fun notesLines(lines: List<String>): List<String> {
         val bullets = lines
             .filter { it.startsWith("- ") || it.startsWith("* ") }
             .map { it.drop(2).trim() }
             .filter { it.isNotEmpty() }
-        if (bullets.isNotEmpty()) return bullets
-        return lines.filter { it.isNotEmpty() && !it.startsWith("#") }
+        return bullets.ifEmpty { lines }
     }
 
     /**
@@ -184,7 +220,7 @@ object AppUpdater {
                 val next = response.request.url.resolve(response.header("Location").orEmpty())
                 response.close()
                 if (next == null || next.scheme != "https" || !isGitHubHost(next.host)) {
-                    throw IOException("Onverwachte doorverwijzing van GitHub")
+                    throw IOException(tr("Onverwachte doorverwijzing van GitHub", "Unexpected redirect from GitHub"))
                 }
                 response = client.newCall(
                     Request.Builder()
@@ -196,9 +232,9 @@ object AppUpdater {
             }
             response.use { r ->
                 if (!r.isSuccessful) throw IOException(httpMessage(r.code, r.header("X-RateLimit-Remaining")))
-                val body = r.body ?: throw IOException("Leeg antwoord van GitHub")
+                val body = r.body ?: throw IOException(tr("Leeg antwoord van GitHub", "Empty response from GitHub"))
                 val total = body.contentLength().takeIf { it > 0 } ?: info.sizeBytes
-                if (total > MAX_APK_BYTES) throw IOException("Het bestand is onverwacht groot.")
+                if (total > MAX_APK_BYTES) throw IOException(tr("Het bestand is onverwacht groot.", "The file is unexpectedly large."))
                 val digest = MessageDigest.getInstance("SHA-256")
                 var done = 0L
                 var lastReport = 0L
@@ -212,7 +248,7 @@ object AppUpdater {
                             output.write(buffer, 0, read)
                             digest.update(buffer, 0, read)
                             done += read
-                            if (done > MAX_APK_BYTES) throw IOException("Het bestand is onverwacht groot.")
+                            if (done > MAX_APK_BYTES) throw IOException(tr("Het bestand is onverwacht groot.", "The file is unexpectedly large."))
                             val now = System.nanoTime()
                             if (now - lastReport > PROGRESS_INTERVAL_NS) {
                                 lastReport = now
@@ -225,10 +261,10 @@ object AppUpdater {
                 val hash = digest.digest().joinToString("") { "%02x".format(it) }
                 val expected = info.sha256
                 if (expected != null && !expected.equals(hash, ignoreCase = true)) {
-                    throw IOException("De controlesom van de download klopt niet; het bestand is beschadigd.")
+                    throw IOException(tr("De controlesom van de download klopt niet; het bestand is beschadigd.", "The checksum of the download does not match; the file is damaged."))
                 }
             }
-            if (!part.renameTo(target)) throw IOException("Het gedownloade bestand kon niet worden opgeslagen.")
+            if (!part.renameTo(target)) throw IOException(tr("Het gedownloade bestand kon niet worden opgeslagen.", "The downloaded file could not be saved."))
             Result.success(target)
         } catch (e: CancellationException) {
             part.delete()
@@ -256,26 +292,26 @@ object AppUpdater {
             pm.getPackageArchiveInfo(file.absolutePath, flags)
         } catch (e: Exception) {
             null
-        } ?: return "Het gedownloade bestand is geen geldige app."
+        } ?: return tr("Het gedownloade bestand is geen geldige app.", "The downloaded file is not a valid app.")
         if (archive.packageName != context.packageName) {
-            return "Het gedownloade bestand hoort niet bij SceneRadio (andere pakketnaam)."
+            return tr("Het gedownloade bestand hoort niet bij SceneRadio (andere pakketnaam).", "The downloaded file does not belong to SceneRadio (different package name).")
         }
         val installed = try {
             pm.getPackageInfo(context.packageName, flags)
         } catch (e: Exception) {
-            return "De geïnstalleerde app kon niet worden gelezen."
+            return tr("De geïnstalleerde app kon niet worden gelezen.", "The installed app could not be read.")
         }
         if (versionCodeOf(archive) <= versionCodeOf(installed)) {
-            return "Het gedownloade bestand is niet nieuwer dan de geïnstalleerde versie."
+            return tr("Het gedownloade bestand is niet nieuwer dan de geïnstalleerde versie.", "The downloaded file is not newer than the installed version.")
         }
         val newSigners = signerHashes(archive)
         val oldSigners = signerHashes(installed)
         if (newSigners.isEmpty()) {
             // Op oude Android-versies (voor 9) kan de handtekening hier niet gelezen worden; Android zelf controleert dan bij het installeren.
-            return if (Build.VERSION.SDK_INT >= 28) "De update bevat geen handtekening en wordt niet geïnstalleerd." else null
+            return if (Build.VERSION.SDK_INT >= 28) tr("De update bevat geen handtekening en wordt niet geïnstalleerd.", "The update contains no signature and will not be installed.") else null
         }
         if (newSigners != oldSigners) {
-            return "De update is met een andere sleutel ondertekend dan de geïnstalleerde app en wordt niet geïnstalleerd."
+            return tr("De update is met een andere sleutel ondertekend dan de geïnstalleerde app en wordt niet geïnstalleerd.", "The update is signed with a different key than the installed app and will not be installed.")
         }
         return null
     }
@@ -327,8 +363,8 @@ object AppUpdater {
     }
 
     private fun httpMessage(code: Int, rateRemaining: String?): String = when (code) {
-        403, 429 -> if (rateRemaining == "0" || code == 429) "GitHub-limiet bereikt; probeer het later opnieuw." else "GitHub weigert het verzoek (403)."
-        404 -> "Geen release gevonden (404)."
-        else -> "GitHub-fout: HTTP $code"
+        403, 429 -> if (rateRemaining == "0" || code == 429) tr("GitHub-limiet bereikt; probeer het later opnieuw.", "GitHub rate limit reached; try again later.") else tr("GitHub weigert het verzoek (403).", "GitHub refuses the request (403).")
+        404 -> tr("Geen release gevonden (404).", "No release found (404).")
+        else -> tr("GitHub-fout: HTTP $code", "GitHub error: HTTP $code")
     }
 }

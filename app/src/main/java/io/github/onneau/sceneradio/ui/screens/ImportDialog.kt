@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import io.github.onneau.sceneradio.ui.RadioViewModel
+import io.github.onneau.sceneradio.i18n.tr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,12 +36,12 @@ fun ImportDialog(
     var selectedTab by remember { mutableIntStateOf(0) } // 0: URL, 1: Bestand/Plakken, 2: Radio Browser
 
     // Tab 0: URL
-    var playlistName by remember { mutableStateOf("Mijn Afspeellijst") }
+    var playlistName by remember { mutableStateOf(tr("Mijn Afspeellijst", "My Playlist")) }
     var playlistUrl by remember { mutableStateOf("") }
 
     // Tab 1: Bestand / Tekst
     var m3uRawText by remember { mutableStateOf("") }
-    var localFileName by remember { mutableStateOf("Geïmporteerd bestand") }
+    var localFileName by remember { mutableStateOf(tr("Geïmporteerd bestand", "Imported file")) }
 
     // Tab 2: Radio-Browser
     var radioBrowserQuery by remember { mutableStateOf("") }
@@ -66,22 +67,22 @@ fun ImportDialog(
                         val read = stream.read(chunk)
                         if (read < 0) break
                         total += read
-                        if (total > maxBytes) throw java.io.IOException("Bestand te groot")
+                        if (total > maxBytes) throw java.io.IOException(tr("Bestand te groot", "File too large"))
                         buffer.write(chunk, 0, read)
                     }
                     val text = buffer.toString("UTF-8")
                     m3uRawText = text
-                    localFileName = "Bestand (${text.lines().size} regels)"
+                    localFileName = tr("Bestand (${text.lines().size} regels)", "File (${text.lines().size} lines)")
                 }
             } catch (e: Exception) {
-                localFileName = "Bestand kon niet worden gelezen (max 5 MB)"
+                localFileName = tr("Bestand kon niet worden gelezen (max 5 MB)", "File could not be read (max 5 MB)")
             }
         }
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Zenders & Afspeellijsten Toevoegen") },
+        title = { Text(tr("Zenders & Afspeellijsten Toevoegen", "Add Stations & Playlists")) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 ScrollableTabRow(
@@ -96,7 +97,7 @@ fun ImportDialog(
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text("Bestand / Tekst") }
+                        text = { Text(tr("Bestand / Tekst", "File / Text")) }
                     )
                     Tab(
                         selected = selectedTab == 2,
@@ -117,7 +118,7 @@ fun ImportDialog(
                         CircularProgressIndicator()
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = importMessage ?: "Bezig met verwerken…",
+                            text = importMessage ?: tr("Bezig met verwerken…", "Processing…"),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -128,14 +129,14 @@ fun ImportDialog(
                             OutlinedTextField(
                                 value = playlistName,
                                 onValueChange = { playlistName = it },
-                                label = { Text("Naam van afspeellijst") },
+                                label = { Text(tr("Naam van afspeellijst", "Playlist name")) },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
                             OutlinedTextField(
                                 value = playlistUrl,
                                 onValueChange = { playlistUrl = it },
-                                label = { Text("Directe M3U / M3U8 URL") },
+                                label = { Text(tr("Directe M3U / M3U8 URL", "Direct M3U / M3U8 URL")) },
                                 placeholder = { Text("https://example.com/radio.m3u") },
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -155,12 +156,12 @@ fun ImportDialog(
                             ) {
                                 Icon(Icons.Default.UploadFile, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Open lokaal .m3u / .m3u8 bestand")
+                                Text(tr("Open lokaal .m3u / .m3u8 bestand", "Open local .m3u / .m3u8 file"))
                             }
 
                             if (m3uRawText.isNotBlank()) {
                                 Text(
-                                    text = "Geladen: $localFileName",
+                                    text = tr("Geladen: $localFileName", "Loaded: $localFileName"),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.SemiBold
@@ -168,14 +169,14 @@ fun ImportDialog(
                             }
 
                             Text(
-                                text = "Of plak hieronder de #EXTM3U tekst:",
+                                text = tr("Of plak hieronder de #EXTM3U tekst:", "Or paste the #EXTM3U text below:"),
                                 style = MaterialTheme.typography.labelMedium
                             )
 
                             OutlinedTextField(
                                 value = m3uRawText,
                                 onValueChange = { m3uRawText = it },
-                                placeholder = { Text("#EXTM3U\n#EXTINF:-1 tvg-logo=\"...\",Zendernaam\nhttp://stream-url") },
+                                placeholder = { Text(tr("#EXTM3U\n#EXTINF:-1 tvg-logo=\"...\",Zendernaam\nhttp://stream-url", "#EXTM3U\n#EXTINF:-1 tvg-logo=\"...\",Station name\nhttp://stream-url")) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(130.dp)
@@ -189,7 +190,7 @@ fun ImportDialog(
                                 OutlinedTextField(
                                     value = radioBrowserQuery,
                                     onValueChange = { radioBrowserQuery = it },
-                                    label = { Text("Zendernaam of tag") },
+                                    label = { Text(tr("Zendernaam of tag", "Station name or tag")) },
                                     modifier = Modifier.weight(1f),
                                     singleLine = true
                                 )
@@ -197,7 +198,7 @@ fun ImportDialog(
                                 IconButton(
                                     onClick = { viewModel.searchRadioBrowser(radioBrowserQuery) }
                                 ) {
-                                    Icon(Icons.Default.Search, contentDescription = "Zoeken")
+                                    Icon(Icons.Default.Search, contentDescription = tr("Zoeken", "Search"))
                                 }
                             }
 
@@ -261,7 +262,7 @@ fun ImportDialog(
                                             }
                                             Icon(
                                                 Icons.Default.Add,
-                                                contentDescription = "Toevoegen",
+                                                contentDescription = tr("Toevoegen", "Add"),
                                                 tint = MaterialTheme.colorScheme.primary
                                             )
                                         }
@@ -284,7 +285,7 @@ fun ImportDialog(
                     },
                     enabled = playlistUrl.isNotBlank() && !isImporting
                 ) {
-                    Text("Downloaden & Importeren")
+                    Text(tr("Downloaden & Importeren", "Download & Import"))
                 }
             } else if (selectedTab == 1) {
                 Button(
@@ -296,13 +297,13 @@ fun ImportDialog(
                     },
                     enabled = m3uRawText.isNotBlank() && !isImporting
                 ) {
-                    Text("Opslaan in App")
+                    Text(tr("Opslaan in App", "Save in App"))
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Sluiten")
+                Text(tr("Sluiten", "Close"))
             }
         }
     )

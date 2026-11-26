@@ -13,6 +13,7 @@ import java.net.InetAddress
 import java.net.URLEncoder
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import io.github.onneau.sceneradio.i18n.tr
 
 data class RadioBrowserStationItem(
     val stationuuid: String,
@@ -104,7 +105,7 @@ object RadioApiService {
 
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    return@withContext Result.failure(Exception("Radio Browser fout: HTTP ${response.code}"))
+                    return@withContext Result.failure(Exception(tr("Radio Browser fout: HTTP ${response.code}", "Radio Browser error: HTTP ${response.code}")))
                 }
                 val body = response.body?.string() ?: return@withContext Result.success(emptyList())
                 val type = object : TypeToken<List<RadioBrowserStationItem>>() {}.type
@@ -130,7 +131,7 @@ object RadioApiService {
 
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    return@withContext Result.failure(Exception("Radio Browser fout: HTTP ${response.code}"))
+                    return@withContext Result.failure(Exception(tr("Radio Browser fout: HTTP ${response.code}", "Radio Browser error: HTTP ${response.code}")))
                 }
                 val body = response.body?.string() ?: return@withContext Result.success(emptyList())
                 val type = object : TypeToken<List<RadioBrowserStationItem>>() {}.type
@@ -234,12 +235,12 @@ object RadioApiService {
                 .build()
             client.newCall(request).execute().use { response ->
                 when {
-                    response.code == 404 -> Result.failure(Exception("De zenderlijst is niet gevonden (404)."))
-                    response.code == 429 -> Result.failure(Exception("GitHub-limiet bereikt; probeer het later opnieuw."))
-                    !response.isSuccessful -> Result.failure(Exception("GitHub-fout: HTTP ${response.code}"))
+                    response.code == 404 -> Result.failure(Exception(tr("De zenderlijst is niet gevonden (404).", "The station list was not found (404).")))
+                    response.code == 429 -> Result.failure(Exception(tr("GitHub-limiet bereikt; probeer het later opnieuw.", "GitHub rate limit reached; try again later.")))
+                    !response.isSuccessful -> Result.failure(Exception(tr("GitHub-fout: HTTP ${response.code}", "GitHub error: HTTP ${response.code}")))
                     else -> {
                         val bytes = readBytesLimited(response)
-                            ?: return@withContext Result.failure(Exception("Bestand is te groot (max 5 MB)"))
+                            ?: return@withContext Result.failure(Exception(tr("Bestand is te groot (max 5 MB)", "File is too large (max 5 MB)")))
                         val sha = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
                         Result.success(PlaylistFile(sha, String(bytes, Charsets.UTF_8)))
                     }
@@ -260,10 +261,10 @@ object RadioApiService {
 
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    return@withContext Result.failure(Exception("Kon URL niet downloaden (HTTP ${response.code})"))
+                    return@withContext Result.failure(Exception(tr("Kon URL niet downloaden (HTTP ${response.code})", "Could not download URL (HTTP ${response.code})")))
                 }
                 val text = readBodyLimited(response)
-                    ?: return@withContext Result.failure(Exception("Afspeellijst is te groot (max 5 MB)"))
+                    ?: return@withContext Result.failure(Exception(tr("Afspeellijst is te groot (max 5 MB)", "Playlist is too large (max 5 MB)")))
                 Result.success(text)
             }
         } catch (e: Exception) {

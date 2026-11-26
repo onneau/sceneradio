@@ -35,6 +35,7 @@ import io.github.onneau.sceneradio.ui.visualizer.shiftHue
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import io.github.onneau.sceneradio.i18n.tr
 
 private val CHANGED_COLOR = Color(0xFFFFB300)   // een aangepaste waarde springt eruit
 
@@ -69,7 +70,7 @@ fun VisualizerSettingsScreen(
     val header: @Composable () -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Terug")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Terug", "Back"))
             }
             Text(
                 text = "Visualizer",
@@ -147,31 +148,31 @@ private fun SliderSections(
 ) {
     val d = remember { VisualizerSettings() }
 
-    SectionTitle("Snelheid")
+    SectionTitle(tr("Snelheid", "Speed"))
     SliderRow(
-        label = "Scroller-golf", valueText = oneDecimal(settings.waveSpeed),
+        label = tr("Scroller-golf", "Scroller wave"), valueText = oneDecimal(settings.waveSpeed),
         value = settings.waveSpeed, range = VisualizerSettings.SPEED_RANGE, default = d.waveSpeed
     ) { v -> update { it.copy(waveSpeed = roundTo(v, 0.1f)) } }
     SliderRow(
-        label = "Koperbalken", valueText = oneDecimal(settings.copperSpeed),
+        label = tr("Koperbalken", "Copper bars"), valueText = oneDecimal(settings.copperSpeed),
         value = settings.copperSpeed, range = VisualizerSettings.SPEED_RANGE, default = d.copperSpeed
     ) { v -> update { it.copy(copperSpeed = roundTo(v, 0.1f)) } }
     SliderRow(
-        label = "Zendernaam (hellen en zwieren)", valueText = oneDecimal(settings.hazeSpeed),
+        label = tr("Zendernaam (hellen en zwieren)", "Station name (tilt and sway)"), valueText = oneDecimal(settings.hazeSpeed),
         value = settings.hazeSpeed, range = VisualizerSettings.SPEED_RANGE, default = d.hazeSpeed
     ) { v -> update { it.copy(hazeSpeed = roundTo(v, 0.1f)) } }
     SliderRow(
-        label = "Sterren", valueText = oneDecimal(settings.starSpeed) + "×",
+        label = tr("Sterren", "Stars"), valueText = oneDecimal(settings.starSpeed) + "×",
         value = settings.starSpeed, range = VisualizerSettings.STAR_SPEED_RANGE, default = d.starSpeed
     ) { v -> update { it.copy(starSpeed = roundTo(v, 0.1f)) } }
 
-    SectionTitle("Grootte")
+    SectionTitle(tr("Grootte", "Size"))
     SliderRow(
-        label = "Zendernaam", valueText = oneDecimal(settings.titleScale) + "×",
+        label = tr("Zendernaam", "Station name"), valueText = oneDecimal(settings.titleScale) + "×",
         value = settings.titleScale, range = VisualizerSettings.TITLE_SCALE_RANGE, default = d.titleScale
     ) { v -> update { it.copy(titleScale = roundTo(v, 0.05f)) } }
     SliderRow(
-        label = "Scroller (deel van de naam)", valueText = "${(settings.scrollerRatio * 100).roundToInt()} %",
+        label = tr("Scroller (deel van de naam)", "Scroller (part of the name)"), valueText = "${(settings.scrollerRatio * 100).roundToInt()} %",
         value = settings.scrollerRatio, range = VisualizerSettings.SCROLLER_RATIO_RANGE, default = d.scrollerRatio
     ) { v -> update { it.copy(scrollerRatio = roundTo(v, 0.05f)) } }
     SliderRow(
@@ -182,14 +183,14 @@ private fun SliderSections(
         steps = VisualizerSettings.SLOGAN_PX_RANGE.last - VisualizerSettings.SLOGAN_PX_RANGE.first - 1
     ) { v -> update { it.copy(sloganPx = v.roundToInt()) } }
     SliderRow(
-        label = "Zendernaam-uitslag", valueText = oneDecimal(settings.hazeAmplitude) + " px",
+        label = tr("Zendernaam-uitslag", "Station name swing"), valueText = oneDecimal(settings.hazeAmplitude) + " px",
         value = settings.hazeAmplitude, range = VisualizerSettings.HAZE_AMPLITUDE_RANGE, default = d.hazeAmplitude
     ) { v -> update { it.copy(hazeAmplitude = roundTo(v, 0.1f)) } }
 
-    SectionTitle("Kleuren")
-    HueRow("Koperbalken", settings.copperHue, Color(0xFFFFC22E)) { h -> update { it.copy(copperHue = h) } }
+    SectionTitle(tr("Kleuren", "Colors"))
+    HueRow(tr("Koperbalken", "Copper bars"), settings.copperHue, Color(0xFFFFC22E)) { h -> update { it.copy(copperHue = h) } }
     Text(
-        text = "Kleur van de koperbalken laten veranderen",
+        text = tr("Kleur van de koperbalken laten veranderen", "Let the color of the copper bars change"),
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
     )
@@ -197,43 +198,43 @@ private fun SliderSections(
         FilterChip(
             selected = settings.copperMode == CopperMode.OFF,
             onClick = { update { it.copy(copperMode = CopperMode.OFF) } },
-            label = { Text("Uit") },
+            label = { Text(tr("Uit", "Off")) },
             shape = RoundedCornerShape(12.dp)
         )
         FilterChip(
             selected = settings.copperMode == CopperMode.SUBTLE,
             onClick = { update { it.copy(copperMode = CopperMode.SUBTLE) } },
-            label = { Text("Subtiel") },
+            label = { Text(tr("Subtiel", "Subtle")) },
             shape = RoundedCornerShape(12.dp)
         )
         FilterChip(
             selected = settings.copperMode == CopperMode.ALL,
             onClick = { update { it.copy(copperMode = CopperMode.ALL) } },
-            label = { Text("Alle kleuren") },
+            label = { Text(tr("Alle kleuren", "All colors")) },
             shape = RoundedCornerShape(12.dp)
         )
     }
     when (settings.copperMode) {
         CopperMode.OFF -> Text(
-            text = "De koperbalken houden de gekozen tint.",
+            text = tr("De koperbalken houden de gekozen tint.", "The copper bars keep the chosen hue."),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp)
         )
         CopperMode.SUBTLE -> {
             Text(
-                text = "De kleur schuift rustig heen en weer rond de gekozen tint.",
+                text = tr("De kleur schuift rustig heen en weer rond de gekozen tint.", "The color slowly drifts back and forth around the chosen hue."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
             )
             SliderRow(
-                label = "Bereik", valueText = "±${settings.copperDriftRange.roundToInt()}°",
+                label = tr("Bereik", "Range"), valueText = "±${settings.copperDriftRange.roundToInt()}°",
                 value = settings.copperDriftRange, range = VisualizerSettings.COPPER_DRIFT_RANGE_RANGE,
                 default = d.copperDriftRange
             ) { v -> update { it.copy(copperDriftRange = v.roundToInt().toFloat()) } }
             SliderRow(
-                label = "Een rondje duurt", valueText = "${settings.copperDriftSeconds} s",
+                label = tr("Een rondje duurt", "One round takes"), valueText = "${settings.copperDriftSeconds} s",
                 value = settings.copperDriftSeconds.toFloat(),
                 range = VisualizerSettings.COPPER_DRIFT_SECONDS_RANGE.first.toFloat()..VisualizerSettings.COPPER_DRIFT_SECONDS_RANGE.last.toFloat(),
                 default = d.copperDriftSeconds.toFloat(),
@@ -242,7 +243,7 @@ private fun SliderSections(
         }
         CopperMode.ALL -> {
             Text(
-                text = "De kleur loopt langzaam door de hele regenboog, vanaf de gekozen tint.",
+                text = tr("De kleur loopt langzaam door de hele regenboog, vanaf de gekozen tint.", "The color slowly runs through the whole rainbow, starting from the chosen hue."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 6.dp)
@@ -256,36 +257,36 @@ private fun SliderSections(
                     .background(Brush.horizontalGradient(RAINBOW))
             )
             SliderRow(
-                label = "Een rondje duurt", valueText = formatDuration(settings.copperCycleSeconds),
+                label = tr("Een rondje duurt", "One round takes"), valueText = formatDuration(settings.copperCycleSeconds),
                 value = settings.copperCycleSeconds.toFloat(),
                 range = VisualizerSettings.COPPER_CYCLE_SECONDS_RANGE.first.toFloat()..VisualizerSettings.COPPER_CYCLE_SECONDS_RANGE.last.toFloat(),
                 default = d.copperCycleSeconds.toFloat(),
                 steps = (VisualizerSettings.COPPER_CYCLE_SECONDS_RANGE.last - VisualizerSettings.COPPER_CYCLE_SECONDS_RANGE.first) / 5 - 1
             ) { v -> update { it.copy(copperCycleSeconds = (v / 5f).roundToInt() * 5) } }
             Text(
-                text = "Instelbaar van 20 seconden tot 5 minuten.",
+                text = tr("Instelbaar van 20 seconden tot 5 minuten.", "Adjustable from 20 seconds to 5 minutes."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
     HueRow("Equalizer", settings.equalizerHue, Color(0xFFF2475A)) { h -> update { it.copy(equalizerHue = h) } }
-    HueRow("Achtergrond en sterren", settings.backgroundHue, Color(0xFF3377FF)) { h ->
+    HueRow(tr("Achtergrond en sterren", "Background and stars"), settings.backgroundHue, Color(0xFF3377FF)) { h ->
         update { it.copy(backgroundHue = h) }
     }
     Text(
-        text = "De lettertypes (zendernaam, scroller, slogan) behouden hun eigen Amiga-kleuren.",
+        text = tr("De lettertypes (zendernaam, scroller, slogan) behouden hun eigen Amiga-kleuren.", "The fonts (station name, scroller, slogan) keep their own Amiga colors."),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(bottom = 12.dp)
     )
 
-    SectionTitle("Sterren")
+    SectionTitle(tr("Sterren", "Stars"))
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Vonkelende sterren", style = MaterialTheme.typography.bodyMedium)
+            Text(tr("Vonkelende sterren", "Sparkling stars"), style = MaterialTheme.typography.bodyMedium)
             Text(
-                text = "De sterren flikkeren zacht en af en toe fonkelt er een met een kruisje.",
+                text = tr("De sterren flikkeren zacht en af en toe fonkelt er een met een kruisje.", "The stars twinkle softly and now and then one sparkles with a little cross."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -296,12 +297,12 @@ private fun SliderSections(
         )
     }
 
-    SectionTitle("Hoes van het nummer")
+    SectionTitle(tr("Hoes van het nummer", "Track cover"))
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Hoes van het nummer tonen", style = MaterialTheme.typography.bodyMedium)
+            Text(tr("Hoes van het nummer tonen", "Show track cover"), style = MaterialTheme.typography.bodyMedium)
             Text(
-                text = "Een hoesje in Amiga-stijl in de visualizer, en de hoes bij Android Auto en op het vergrendelscherm, zolang er een nummer met artiest en titel speelt.",
+                text = tr("Een hoesje in Amiga-stijl in de visualizer, en de hoes bij Android Auto en op het vergrendelscherm, zolang er een nummer met artiest en titel speelt.", "A cover in Amiga style in the visualizer, and the cover on Android Auto and on the lock screen, as long as a track with artist and title is playing."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -312,18 +313,18 @@ private fun SliderSections(
         )
     }
     Text(
-        text = "Alleen artiest en titel gaan naar de hoezen-dienst (MusicBrainz en Cover Art Archive). Hoezen blijven in een cache op je apparaat. Zonder hoes toont de app gewoon de balken. Staat standaard uit.",
+        text = tr("Alleen artiest en titel gaan naar de hoezen-dienst (MusicBrainz en Cover Art Archive). Hoezen blijven in een cache op je apparaat. Zonder hoes toont de app gewoon de balken. Staat standaard uit.", "Only artist and title go to the cover service (MusicBrainz and Cover Art Archive). Covers are kept in a cache on your device. Without a cover the app simply shows the bars. Off by default."),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp)
     )
     Text(
-        text = "Grootte van de hoes in de visualizer",
+        text = tr("Grootte van de hoes in de visualizer", "Cover size in the visualizer"),
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier.padding(top = 12.dp, bottom = 2.dp)
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf(CoverSize.SMALL to "Klein", CoverSize.MEDIUM to "Middel", CoverSize.LARGE to "Groot").forEach { (size, label) ->
+        listOf(CoverSize.SMALL to tr("Klein", "Small"), CoverSize.MEDIUM to tr("Middel", "Medium"), CoverSize.LARGE to tr("Groot", "Large")).forEach { (size, label) ->
             FilterChip(
                 selected = settings.coverSize == size,
                 onClick = { update { it.copy(coverSize = size) } },
@@ -333,22 +334,22 @@ private fun SliderSections(
         }
     }
     Text(
-        text = "Klein: midden in de koperbalken (zoals voorheen). Middel: 1,4 × zo groot, ook in de koperbalken. Groot: 1,9 × zo groot, links onder het spiegelbeeld van de scroller; maak je de scroller of de zendernaam groter, dan wordt Groot vanzelf wat kleiner.",
+        text = tr("Klein: midden in de koperbalken (zoals voorheen). Middel: 1,4 × zo groot, ook in de koperbalken. Groot: 1,9 × zo groot, links onder het spiegelbeeld van de scroller; maak je de scroller of de zendernaam groter, dan wordt Groot vanzelf wat kleiner.", "Small: in the middle of the copper bars (as before). Medium: 1.4 × as big, also in the copper bars. Large: 1.9 × as big, bottom left below the mirror image of the scroller; if you make the scroller or the station name bigger, Large automatically gets a bit smaller."),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp)
     )
     Text(
-        text = "Positie van de hoes",
+        text = tr("Positie van de hoes", "Cover position"),
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier.padding(top = 12.dp, bottom = 2.dp)
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
-            CoverPosition.DEFAULT to "Standaard",
-            CoverPosition.LEFT to "Links",
-            CoverPosition.CENTER to "Midden",
-            CoverPosition.RIGHT to "Rechts"
+            CoverPosition.DEFAULT to tr("Standaard", "Default"),
+            CoverPosition.LEFT to tr("Links", "Left"),
+            CoverPosition.CENTER to tr("Midden", "Center"),
+            CoverPosition.RIGHT to tr("Rechts", "Right")
         ).forEach { (position, label) ->
             FilterChip(
                 selected = settings.coverPosition == position,
@@ -359,16 +360,16 @@ private fun SliderSections(
         }
     }
     Text(
-        text = "Geldt voor de hoes in de visualizer én in de speler. Standaard is zoals voorheen: in de visualizer Klein en Middel in het midden en Groot links; in de speler staand in het midden en liggend links. Staand wordt de hoes bij Links of Rechts wat kleiner.",
+        text = tr("Geldt voor de hoes in de visualizer én in de speler. Standaard is zoals voorheen: in de visualizer Klein en Middel in het midden en Groot links; in de speler staand in het midden en liggend links. Staand wordt de hoes bij Links of Rechts wat kleiner.", "Applies to the cover in the visualizer and in the player. Default is as before: in the visualizer Small and Medium in the center and Large on the left; in the player centered in portrait and on the left in landscape. In portrait the cover gets a bit smaller with Left or Right."),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp)
     )
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 12.dp)) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Foto van de artiest als er geen hoes is", style = MaterialTheme.typography.bodyMedium)
+            Text(tr("Foto van de artiest als er geen hoes is", "Artist photo when there is no cover"), style = MaterialTheme.typography.bodyMedium)
             Text(
-                text = "Is er geen hoes (ook niet met artiest en titel omgewisseld), dan toont de app overal waar de hoes verschijnt (visualizer, speler, vergrendelscherm en Android Auto, elk volgens zijn eigen schakelaar) een foto van de artiest. De foto komt uit Wikimedia Commons; alleen bij een precies passende naam.",
+                text = tr("Is er geen hoes (ook niet met artiest en titel omgewisseld), dan toont de app overal waar de hoes verschijnt (visualizer, speler, vergrendelscherm en Android Auto, elk volgens zijn eigen schakelaar) een foto van de artiest. De foto komt uit Wikimedia Commons; alleen bij een precies passende naam.", "If there is no cover (not even with artist and title swapped), the app shows a photo of the artist everywhere the cover appears (visualizer, player, lock screen and Android Auto, each according to its own switch). The photo comes from Wikimedia Commons; only for an exactly matching name."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -379,7 +380,7 @@ private fun SliderSections(
         )
     }
     Text(
-        text = "Alleen de naam van de artiest gaat naar MusicBrainz, Wikidata en Wikimedia Commons. Foto's blijven in een cache op je apparaat. De foto's zijn van hun makers; zie Instellingen > Over SceneRadio. Staat standaard uit.",
+        text = tr("Alleen de naam van de artiest gaat naar MusicBrainz, Wikidata en Wikimedia Commons. Foto's blijven in een cache op je apparaat. De foto's zijn van hun makers; zie Instellingen > Over SceneRadio. Staat standaard uit.", "Only the artist's name goes to MusicBrainz, Wikidata and Wikimedia Commons. Photos are kept in a cache on your device. The photos belong to their creators; see Settings > About SceneRadio. Off by default."),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp)
@@ -387,12 +388,12 @@ private fun SliderSections(
 
     SectionTitle("Equalizer")
     SliderRow(
-        label = "Gevoeligheid", valueText = "${(settings.equalizerSensitivity * 100).roundToInt()} %",
+        label = tr("Gevoeligheid", "Sensitivity"), valueText = "${(settings.equalizerSensitivity * 100).roundToInt()} %",
         value = settings.equalizerSensitivity, range = VisualizerSettings.EQ_SENSITIVITY_RANGE,
         default = d.equalizerSensitivity
     ) { v -> update { it.copy(equalizerSensitivity = roundTo(v, 0.05f)) } }
     Text(
-        text = "Lager = rustiger, alleen de pieken komen hoog. Speel muziek af: het voorbeeld hierboven laat dan de echte balken zien.",
+        text = tr("Lager = rustiger, alleen de pieken komen hoog. Speel muziek af: het voorbeeld hierboven laat dan de echte balken zien.", "Lower = calmer, only the peaks go high. Play music: the preview above then shows the real bars."),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
@@ -402,18 +403,18 @@ private fun SliderSections(
         FilterChip(
             selected = !settings.sloganColorFixed,
             onClick = { update { it.copy(sloganColorFixed = false) } },
-            label = { Text("Kleurencyclus") },
+            label = { Text(tr("Kleurencyclus", "Color cycle")) },
             shape = RoundedCornerShape(12.dp)
         )
         FilterChip(
             selected = settings.sloganColorFixed,
             onClick = { update { it.copy(sloganColorFixed = true) } },
-            label = { Text("Vaste kleur") },
+            label = { Text(tr("Vaste kleur", "Fixed color")) },
             shape = RoundedCornerShape(12.dp)
         )
     }
     if (settings.sloganColorFixed) {
-        FixedHueRow("Kleur van de slogan", settings.sloganHue) { h -> update { it.copy(sloganHue = h) } }
+        FixedHueRow(tr("Kleur van de slogan", "Slogan color"), settings.sloganHue) { h -> update { it.copy(sloganHue = h) } }
     }
     Spacer(modifier = Modifier.height(4.dp))
     Surface(
@@ -432,9 +433,9 @@ private fun SliderSections(
                 Text("Slogans", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                 Text(
                     text = when (settings.slogans.size) {
-                        0 -> "Geen slogans: er wordt niets getoond"
-                        1 -> "1 slogan · aanpassen"
-                        else -> "${settings.slogans.size} slogans · aanpassen"
+                        0 -> tr("Geen slogans: er wordt niets getoond", "No slogans: nothing is shown")
+                        1 -> tr("1 slogan · aanpassen", "1 slogan · edit")
+                        else -> tr("${settings.slogans.size} slogans · aanpassen", "${settings.slogans.size} slogans · edit")
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -444,12 +445,12 @@ private fun SliderSections(
         }
     }
 
-    SectionTitle("Dimmen")
+    SectionTitle(tr("Dimmen", "Dimming"))
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Visualizer dimmen", style = MaterialTheme.typography.bodyMedium)
+            Text(tr("Visualizer dimmen", "Dim visualizer"), style = MaterialTheme.typography.bodyMedium)
             Text(
-                text = "Na een tijdje zonder aanraking wordt het beeld minder fel, tegen inbranden en om de ogen te sparen.",
+                text = tr("Na een tijdje zonder aanraking wordt het beeld minder fel, tegen inbranden en om de ogen te sparen.", "After a while without touching, the picture becomes less bright, to prevent burn-in and to spare your eyes."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -461,18 +462,18 @@ private fun SliderSections(
     }
     if (settings.dimEnabled) {
         SliderRow(
-            label = "Dimmen na", valueText = "${settings.dimDelaySec} s",
+            label = tr("Dimmen na", "Dim after"), valueText = "${settings.dimDelaySec} s",
             value = settings.dimDelaySec.toFloat(),
             range = VisualizerSettings.DIM_DELAY_RANGE.first.toFloat()..VisualizerSettings.DIM_DELAY_RANGE.last.toFloat(),
             default = d.dimDelaySec.toFloat(),
             steps = (VisualizerSettings.DIM_DELAY_RANGE.last - VisualizerSettings.DIM_DELAY_RANGE.first) / 5 - 1
         ) { v -> update { it.copy(dimDelaySec = (v / 5f).roundToInt() * 5) } }
         SliderRow(
-            label = "Helderheid na dimmen", valueText = "${(settings.dimLevel * 100).roundToInt()} %",
+            label = tr("Helderheid na dimmen", "Brightness after dimming"), valueText = "${(settings.dimLevel * 100).roundToInt()} %",
             value = settings.dimLevel, range = VisualizerSettings.DIM_LEVEL_RANGE, default = d.dimLevel
         ) { v -> update { it.copy(dimLevel = roundTo(v, 0.05f)) } }
         Text(
-            text = "De tijd telt vanaf het moment dat de visualizer het hele scherm vult. Het menu verdwijnt na 7 seconden, dus het dimmen begint ongeveer 7 seconden later dan ingesteld, gerekend vanaf je laatste aanraking.",
+            text = tr("De tijd telt vanaf het moment dat de visualizer het hele scherm vult. Het menu verdwijnt na 7 seconden, dus het dimmen begint ongeveer 7 seconden later dan ingesteld, gerekend vanaf je laatste aanraking.", "The time counts from the moment the visualizer fills the whole screen. The menu disappears after 7 seconds, so dimming starts about 7 seconds later than set, counted from your last touch."),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -480,10 +481,10 @@ private fun SliderSections(
     Spacer(modifier = Modifier.height(16.dp))
 
     OutlinedButton(onClick = onReset, modifier = Modifier.fillMaxWidth()) {
-        Text("Alles terug naar standaard")
+        Text(tr("Alles terug naar standaard", "Reset everything to default"))
     }
     Text(
-        text = "Je slogans blijven staan.",
+        text = tr("Je slogans blijven staan.", "Your slogans are kept."),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp)
@@ -575,7 +576,7 @@ private fun HueRow(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (changed) "${if (hue > 0) "+" else ""}${hue.roundToInt()}°" else "Standaard",
+                    text = if (changed) "${if (hue > 0) "+" else ""}${hue.roundToInt()}°" else tr("Standaard", "Default"),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = if (changed) CHANGED_COLOR else MaterialTheme.colorScheme.primary

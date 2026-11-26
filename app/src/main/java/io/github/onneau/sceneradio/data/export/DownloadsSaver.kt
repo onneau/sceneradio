@@ -11,6 +11,7 @@ import io.github.onneau.sceneradio.data.log.LogCategory
 import java.io.File
 import java.io.FileInputStream
 import java.io.OutputStream
+import io.github.onneau.sceneradio.i18n.tr
 
 /** Wat er is opgeslagen en waar, voor de melding aan de gebruiker. */
 data class SavedFile(val name: String, val place: String)
@@ -62,9 +63,9 @@ object DownloadsSaver {
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
         val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, pending)
-            ?: error("Android wilde het bestand niet aanmaken in Downloads.")
+            ?: error(tr("Android wilde het bestand niet aanmaken in Downloads.", "Android refused to create the file in Downloads."))
         try {
-            val stream = resolver.openOutputStream(uri) ?: error("Het bestand kon niet worden geopend om te schrijven.")
+            val stream = resolver.openOutputStream(uri) ?: error(tr("Het bestand kon niet worden geopend om te schrijven.", "The file could not be opened for writing."))
             stream.use { write(it) }
             val done = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
             resolver.update(uri, done, null, null)
@@ -81,10 +82,10 @@ object DownloadsSaver {
 
     private fun saveToAppFolder(context: Context, displayName: String, write: (OutputStream) -> Unit): SavedFile {
         val folder = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-            ?: error("Er is geen opslag beschikbaar om het bestand in te zetten.")
+            ?: error(tr("Er is geen opslag beschikbaar om het bestand in te zetten.", "No storage is available to put the file in."))
         folder.mkdirs()
         val target = File(folder, displayName)
         target.outputStream().use { write(it) }
-        return SavedFile(target.name, "de app-map ${folder.absolutePath}")
+        return SavedFile(target.name, tr("de app-map ${folder.absolutePath}", "the app folder ${folder.absolutePath}"))
     }
 }

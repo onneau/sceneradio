@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import io.github.onneau.sceneradio.data.model.VisualizerSettings
 import io.github.onneau.sceneradio.ui.RadioViewModel
+import io.github.onneau.sceneradio.i18n.tr
 
 /**
  * Instellingen > Weergave > Visualizer > Slogans: de teksten die onder de zendernaam langskomen.
@@ -70,7 +71,7 @@ fun SloganSettingsScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Terug")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Terug", "Back"))
             }
             Text(
                 text = "Slogans",
@@ -86,8 +87,8 @@ fun SloganSettingsScreen(
             item {
                 Column {
                     Text(
-                        text = "De tekst onder de zendernaam. Tik op het potlood om een slogan aan te passen, of verwijder hem. " +
-                            "Het lettertype toont hoofdletters; accenten vallen weg.",
+                        text = tr("De tekst onder de zendernaam. Tik op het potlood om een slogan aan te passen, of verwijder hem. ", "The text below the station name. Tap the pencil to edit a slogan, or delete it. ") +
+                            tr("Het lettertype toont hoofdletters; accenten vallen weg.", "The font shows capital letters; accents are dropped."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp)
@@ -99,13 +100,13 @@ fun SloganSettingsScreen(
                         OutlinedTextField(
                             value = draft,
                             onValueChange = { draft = it.replace("\n", "").take(maxLength) },
-                            label = { Text("Nieuwe slogan (max. $maxLength tekens)") },
+                            label = { Text(tr("Nieuwe slogan (max. $maxLength tekens)", "New slogan (max. $maxLength characters)")) },
                             supportingText = {
                                 Text(
                                     when {
-                                        full -> "De lijst is vol ($maxCount slogans). Verwijder er eerst een."
-                                        draftDuplicate -> "Deze slogan staat er al."
-                                        else -> "${draft.length} / $maxLength tekens"
+                                        full -> tr("De lijst is vol ($maxCount slogans). Verwijder er eerst een.", "The list is full ($maxCount slogans). Delete one first.")
+                                        draftDuplicate -> tr("Deze slogan staat er al.", "This slogan is already there.")
+                                        else -> tr("${draft.length} / $maxLength tekens", "${draft.length} / $maxLength characters")
                                     }
                                 )
                             },
@@ -122,23 +123,23 @@ fun SloganSettingsScreen(
                             onClick = { add() },
                             enabled = draftClean.isNotEmpty() && !full && !draftDuplicate
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Toevoegen")
+                            Icon(Icons.Default.Add, contentDescription = tr("Toevoegen", "Add"))
                         }
                     }
                     TextButton(
                         onClick = { draft = withTime(draft) },
                         enabled = !full && withTime(draft) != draft
                     ) {
-                        Text("Tijd invoegen ($timeToken)")
+                        Text(tr("Tijd invoegen ($timeToken)", "Insert time ($timeToken)"))
                     }
                     Text(
-                        text = "$timeToken wordt op het scherm de actuele lokale tijd van je telefoon, bijvoorbeeld 13:24. " +
-                            "De tijd wordt ingevuld als de slogan begint en blijft staan zolang hij zichtbaar is.",
+                        text = tr("$timeToken wordt op het scherm de actuele lokale tijd van je telefoon, bijvoorbeeld 13:24. ", "$timeToken becomes the current local time of your phone on screen, for example 13:24. ") +
+                            tr("De tijd wordt ingevuld als de slogan begint en blijft staan zolang hij zichtbaar is.", "The time is filled in when the slogan starts and stays the same while it is visible."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Jouw slogans (${slogans.size} van $maxCount)",
+                        text = tr("Jouw slogans (${slogans.size} van $maxCount)", "Your slogans (${slogans.size} of $maxCount)"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -149,8 +150,8 @@ fun SloganSettingsScreen(
             if (slogans.isEmpty()) {
                 item {
                     Text(
-                        text = "Er zijn geen slogans: de visualizer toont dan geen tekst onder de zendernaam. " +
-                            "Voeg een slogan toe, of herstel de standaardslogans.",
+                        text = tr("Er zijn geen slogans: de visualizer toont dan geen tekst onder de zendernaam. ", "There are no slogans: the visualizer then shows no text below the station name. ") +
+                            tr("Voeg een slogan toe, of herstel de standaardslogans.", "Add a slogan, or restore the default slogans."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -169,8 +170,8 @@ fun SloganSettingsScreen(
                         Column(modifier = Modifier.weight(1f).padding(vertical = 8.dp)) {
                             Text(text = slogan, style = MaterialTheme.typography.bodyLarge)
                             val tags = listOfNotNull(
-                                "eigen".takeIf { slogan !in defaults },
-                                "met tijd".takeIf { VisualizerSettings.TIME_REGEX.containsMatchIn(slogan) }
+                                tr("eigen", "own").takeIf { slogan !in defaults },
+                                tr("met tijd", "with time").takeIf { VisualizerSettings.TIME_REGEX.containsMatchIn(slogan) }
                             )
                             if (tags.isNotEmpty()) {
                                 Text(
@@ -184,14 +185,14 @@ fun SloganSettingsScreen(
                             editing = slogan
                             editText = slogan
                         }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Aanpassen")
+                            Icon(Icons.Default.Edit, contentDescription = tr("Aanpassen", "Edit"))
                         }
                         IconButton(
                             onClick = {
                                 viewModel.updateVisualizerSettings { it.copy(slogans = it.slogans - slogan) }
                             }
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = "Verwijderen")
+                            Icon(Icons.Default.Close, contentDescription = tr("Verwijderen", "Delete"))
                         }
                     }
                 }
@@ -206,12 +207,12 @@ fun SloganSettingsScreen(
                         enabled = defaults.any { it !in slogans },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Standaardslogans herstellen")
+                        Text(tr("Standaardslogans herstellen", "Restore default slogans"))
                     }
                     Text(
-                        text = "Herstellen zet de ${defaults.size} standaardslogans terug zoals ze waren. Slogans die je zelf hebt " +
-                            "toegevoegd of aangepast blijven staan (er passen er hooguit $maxCount in de lijst). Een te lange slogan " +
-                            "wordt kleiner getoond.",
+                        text = tr("Herstellen zet de ${defaults.size} standaardslogans terug zoals ze waren. Slogans die je zelf hebt ", "Restoring puts the ${defaults.size} default slogans back as they were. Slogans you have ") +
+                            tr("toegevoegd of aangepast blijven staan (er passen er hooguit $maxCount in de lijst). Een te lange slogan ", "added or edited are kept (at most $maxCount fit in the list). A slogan that is too long ") +
+                            tr("wordt kleiner getoond.", "is shown smaller."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 6.dp)
@@ -235,14 +236,14 @@ fun SloganSettingsScreen(
         }
         AlertDialog(
             onDismissRequest = { editing = null },
-            title = { Text("Slogan aanpassen") },
+            title = { Text(tr("Slogan aanpassen", "Edit slogan")) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = editText,
                         onValueChange = { editText = it.replace("\n", "").take(maxLength) },
                         supportingText = {
-                            Text(if (duplicate) "Deze slogan staat er al." else "${editText.length} / $maxLength tekens")
+                            Text(if (duplicate) tr("Deze slogan staat er al.", "This slogan is already there.") else tr("${editText.length} / $maxLength tekens", "${editText.length} / $maxLength characters"))
                         },
                         isError = duplicate,
                         singleLine = true,
@@ -255,15 +256,15 @@ fun SloganSettingsScreen(
                         onClick = { editText = withTime(editText) },
                         enabled = withTime(editText) != editText
                     ) {
-                        Text("Tijd invoegen ($timeToken)")
+                        Text(tr("Tijd invoegen ($timeToken)", "Insert time ($timeToken)"))
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { save() }, enabled = canSave) { Text("Opslaan") }
+                TextButton(onClick = { save() }, enabled = canSave) { Text(tr("Opslaan", "Save")) }
             },
             dismissButton = {
-                TextButton(onClick = { editing = null }) { Text("Annuleren") }
+                TextButton(onClick = { editing = null }) { Text(tr("Annuleren", "Cancel")) }
             }
         )
     }

@@ -43,6 +43,7 @@ import io.github.onneau.sceneradio.ui.RadioViewModel
 import io.github.onneau.sceneradio.ui.components.StationLogo
 import io.github.onneau.sceneradio.ui.visualizer.AmigaVisualizer
 import kotlinx.coroutines.delay
+import io.github.onneau.sceneradio.i18n.tr
 
 @Composable
 fun PlayerScreen(
@@ -336,7 +337,7 @@ private fun PlayerCover(
         val badge = (maxWidth * 0.26f).coerceIn(44.dp, 72.dp)
         Image(
             bitmap = image,
-            contentDescription = "Hoes van het nummer, tik voor volledig scherm",
+            contentDescription = tr("Hoes van het nummer, tik voor volledig scherm", "Track cover, tap for full screen"),
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
@@ -434,7 +435,7 @@ private fun FullScreenCover(cover: Bitmap, playbackState: PlaybackStateData, onC
                 ) {
                     Image(
                         bitmap = image,
-                        contentDescription = "Hoes van het nummer",
+                        contentDescription = tr("Hoes van het nummer", "Track cover"),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxHeight()
@@ -457,7 +458,7 @@ private fun FullScreenCover(cover: Bitmap, playbackState: PlaybackStateData, onC
                 ) {
                     Image(
                         bitmap = image,
-                        contentDescription = "Hoes van het nummer",
+                        contentDescription = tr("Hoes van het nummer", "Track cover"),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -474,10 +475,10 @@ private fun FullScreenCover(cover: Bitmap, playbackState: PlaybackStateData, onC
                     .align(Alignment.TopEnd)
                     .padding(12.dp)
             ) {
-                Icon(Icons.Default.Close, contentDescription = "Sluiten", tint = Color.White)
+                Icon(Icons.Default.Close, contentDescription = tr("Sluiten", "Close"), tint = Color.White)
             }
             Text(
-                text = "Tik ergens om te sluiten",
+                text = tr("Tik ergens om te sluiten", "Tap anywhere to close"),
                 style = MaterialTheme.typography.bodySmall,
                 color = Color(0xFF7C8AA3),
                 modifier = Modifier
@@ -517,10 +518,10 @@ private fun StatusBadge(playbackState: PlaybackStateData, modifier: Modifier = M
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = when {
-                    isBuffering -> "BUFFEREN…"
+                    isBuffering -> tr("BUFFEREN…", "BUFFERING…")
                     isPlaying -> "LIVE RADIO"
-                    playbackState.stationName.isNotBlank() -> "GEPAUZEERD"
-                    else -> "SELECTEER EEN STATION"
+                    playbackState.stationName.isNotBlank() -> tr("GEPAUZEERD", "PAUSED")
+                    else -> tr("SELECTEER EEN STATION", "SELECT A STATION")
                 },
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
@@ -619,7 +620,7 @@ private fun NowPlaying(
         }
     } else {
         Text(
-            text = if (playbackState.stationName.isNotBlank()) "Live Radio Uitzending" else "Geen zender actief",
+            text = if (playbackState.stationName.isNotBlank()) tr("Live Radio Uitzending", "Live Radio Broadcast") else tr("Geen zender actief", "No station active"),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.primary,
             textAlign = textAlign,
@@ -653,7 +654,7 @@ private fun ErrorBox(playbackState: PlaybackStateData, onRetry: () -> Unit) {
                     onClick = onRetry,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Opnieuw")
+                    Text(tr("Opnieuw", "Retry"))
                 }
             }
         }
@@ -679,7 +680,7 @@ private fun TransportControls(
         ) {
             Icon(
                 imageVector = Icons.Default.SkipPrevious,
-                contentDescription = "Vorig station",
+                contentDescription = tr("Vorig station", "Previous station"),
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -702,7 +703,7 @@ private fun TransportControls(
             } else {
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pauze" else "Afspelen",
+                    contentDescription = if (isPlaying) tr("Pauze", "Pause") else tr("Afspelen", "Play"),
                     modifier = Modifier.size(40.dp)
                 )
             }
@@ -714,7 +715,7 @@ private fun TransportControls(
         ) {
             Icon(
                 imageVector = Icons.Default.SkipNext,
-                contentDescription = "Volgend station",
+                contentDescription = tr("Volgend station", "Next station"),
                 modifier = Modifier.size(28.dp)
             )
         }

@@ -34,7 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import io.github.onneau.sceneradio.data.model.RadioStation
+import io.github.onneau.sceneradio.data.model.genreLabel
 import io.github.onneau.sceneradio.ui.RadioViewModel
+import io.github.onneau.sceneradio.i18n.tr
 
 @Composable
 fun TvScreen(
@@ -83,13 +85,13 @@ fun TvScreen(
                 Spacer(modifier = Modifier.weight(1f))
 
                 TvFocusableChip(
-                    text = "Alle zenders (${enabledStations.size})",
+                    text = tr("Alle zenders (${enabledStations.size})", "All stations (${enabledStations.size})"),
                     isSelected = selectedFilterIndex == 0,
                     onClick = { selectedFilterIndex = 0 }
                 )
 
                 TvFocusableChip(
-                    text = "Favorieten (${favoriteStations.size})",
+                    text = tr("Favorieten (${favoriteStations.size})", "Favorites (${favoriteStations.size})"),
                     isSelected = selectedFilterIndex == 1,
                     onClick = { selectedFilterIndex = 1 }
                 )
@@ -116,12 +118,12 @@ fun TvScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = if (selectedFilterIndex == 1) "Nog geen favorieten gemarkeerd." else "Nog geen zenders geïmporteerd.",
+                            text = if (selectedFilterIndex == 1) tr("Nog geen favorieten gemarkeerd.", "No favorites marked yet.") else tr("Nog geen zenders geïmporteerd.", "No stations imported yet."),
                             color = Color.LightGray,
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Text(
-                            text = "Importeer een M3U-afspeellijst of zoek zenders via de telefoon-app.",
+                            text = tr("Importeer een M3U-afspeellijst of zoek zenders via de telefoon-app.", "Import an M3U playlist or search for stations via the phone app."),
                             color = Color.Gray,
                             style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center,
@@ -186,10 +188,10 @@ fun TvScreen(
                 )
                 Text(
                     text = when {
-                        playbackState.isBuffering -> "BUFFEREN…"
+                        playbackState.isBuffering -> tr("BUFFEREN…", "BUFFERING…")
                         playbackState.isPlaying -> "LIVE RADIO"
-                        playbackState.stationName.isNotBlank() -> "GEPAUZEERD"
-                        else -> "SELECTEER EEN STATION"
+                        playbackState.stationName.isNotBlank() -> tr("GEPAUZEERD", "PAUSED")
+                        else -> tr("SELECTEER EEN STATION", "SELECT A STATION")
                     },
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
@@ -266,7 +268,7 @@ fun TvScreen(
                         "${playbackState.currentArtist} - ${playbackState.currentTrackTitle}"
                     !playbackState.currentTrackTitle.isNullOrBlank() -> playbackState.currentTrackTitle!!
                     !playbackState.currentArtist.isNullOrBlank() -> playbackState.currentArtist!!
-                    else -> "Live uitzending"
+                    else -> tr("Live uitzending", "Live broadcast")
                 }
 
                 Text(
@@ -293,7 +295,7 @@ fun TvScreen(
                         Spacer(modifier = Modifier.height(6.dp))
                         TvActionButton(
                             icon = Icons.Default.Refresh,
-                            label = "Opnieuw proberen",
+                            label = tr("Opnieuw proberen", "Try again"),
                             onClick = { viewModel.retryPlayback() }
                         )
                     }
@@ -307,20 +309,20 @@ fun TvScreen(
             ) {
                 TvActionButton(
                     icon = Icons.Default.SkipPrevious,
-                    label = "Vorige",
+                    label = tr("Vorige", "Previous"),
                     onClick = { viewModel.playPreviousStation() }
                 )
 
                 TvActionButton(
                     icon = if (playbackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    label = if (playbackState.isPlaying) "Pauze" else "Afspelen",
+                    label = if (playbackState.isPlaying) tr("Pauze", "Pause") else tr("Afspelen", "Play"),
                     onClick = { viewModel.togglePlayPause() },
                     isPrimary = true
                 )
 
                 TvActionButton(
                     icon = Icons.Default.SkipNext,
-                    label = "Volgende",
+                    label = tr("Volgende", "Next"),
                     onClick = { viewModel.playNextStation() }
                 )
             }
@@ -399,7 +401,7 @@ fun TvStationItemRow(
                 )
                 if (!station.groupTitle.isNullOrBlank()) {
                     Text(
-                        text = station.groupTitle,
+                        text = genreLabel(station.groupTitle),
                         color = Color.LightGray,
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1
@@ -410,7 +412,7 @@ fun TvStationItemRow(
             if (station.isFavorite) {
                 Icon(
                     imageVector = Icons.Default.Star,
-                    contentDescription = "Favoriet",
+                    contentDescription = tr("Favoriet", "Favorite"),
                     tint = Color(0xFFFBBF24),
                     modifier = Modifier.size(20.dp)
                 )
@@ -419,7 +421,7 @@ fun TvStationItemRow(
             if (isPlaying) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                    contentDescription = "Speelt nu af",
+                    contentDescription = tr("Speelt nu af", "Now playing"),
                     tint = Color(0xFF10B981),
                     modifier = Modifier.size(22.dp)
                 )

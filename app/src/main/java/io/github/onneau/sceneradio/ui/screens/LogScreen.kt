@@ -69,7 +69,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
+import io.github.onneau.sceneradio.i18n.Lang
+import io.github.onneau.sceneradio.i18n.tr
 
 // Een regel in de lijst: een datumkopje of een logregel.
 private sealed interface LogRow {
@@ -124,8 +125,8 @@ fun LogScreen(
         scope.launch {
             val result = withContext(Dispatchers.IO) { LogExport.saveToDownloads(context, withSystemLog, withDeviceInfo) }
             message = result.fold(
-                onSuccess = { "✓ Opgeslagen in ${it.place} als ${it.name}" },
-                onFailure = { "Opslaan mislukt: ${it.message ?: "onbekende fout"}" }
+                onSuccess = { tr("✓ Opgeslagen in ${it.place} als ${it.name}", "✓ Saved in ${it.place} as ${it.name}") },
+                onFailure = { tr("Opslaan mislukt: ${it.message ?: "onbekende fout"}", "Saving failed: ${it.message ?: "unknown error"}") }
             )
         }
     }
@@ -137,9 +138,9 @@ fun LogScreen(
                 try {
                     context.startActivity(chooser)
                 } catch (e: Exception) {
-                    message = "Delen mislukt: ${e.message ?: "geen app gevonden"}"
+                    message = tr("Delen mislukt: ${e.message ?: "geen app gevonden"}", "Sharing failed: ${e.message ?: "no app found"}")
                 }
-            }.onFailure { message = "Delen mislukt: ${it.message ?: "onbekende fout"}" }
+            }.onFailure { message = tr("Delen mislukt: ${it.message ?: "onbekende fout"}", "Sharing failed: ${it.message ?: "unknown error"}") }
         }
     }
 
@@ -147,7 +148,7 @@ fun LogScreen(
         val text = shown.joinToString("\n") { "${it.date} ${it.time} ${it.label.padEnd(9)} ${it.message}" }
         val part = if (text.length > COPY_MAX_CHARS) text.takeLast(COPY_MAX_CHARS) else text
         clipboard.setText(AnnotatedString(part))
-        message = if (text.length > COPY_MAX_CHARS) "Gekopieerd (alleen het laatste deel)" else "Gekopieerd (${shown.size} regels)"
+        message = if (text.length > COPY_MAX_CHARS) tr("Gekopieerd (alleen het laatste deel)", "Copied (last part only)") else tr("Gekopieerd (${shown.size} regels)", "Copied (${shown.size} lines)")
     }
 
     Column(
@@ -155,7 +156,7 @@ fun LogScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        SettingsHeader("Logboek", onBack)
+        SettingsHeader(tr("Logboek", "Log"), onBack)
         Spacer(modifier = Modifier.height(8.dp))
 
         if (landscape) {
@@ -246,24 +247,33 @@ fun LogScreen(
     if (confirmClear) {
         AlertDialog(
             onDismissRequest = { confirmClear = false },
-            title = { Text("Logboek wissen?") },
-            text = { Text("Alle regels worden van dit toestel verwijderd. Dat kan niet ongedaan worden gemaakt.") },
+            title = { Text(tr("Logboek wissen?", "Clear log?")) },
+            text = { Text(tr("Alle regels worden van dit toestel verwijderd. Dat kan niet ongedaan worden gemaakt.", "All lines are removed from this device. This cannot be undone.")) },
             confirmButton = {
                 Button(onClick = {
                     confirmClear = false
                     AppLog.clear()
-                    message = "Logboek gewist"
-                }) { Text("Wissen") }
+                    message = tr("Logboek gewist", "Log cleared")
+                }) { Text(tr("Wissen", "Clear")) }
             },
-            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Annuleren") } }
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text(tr("Annuleren", "Cancel")) } }
         )
     }
 }
 
+/** De filterknop van een logboekgroep, in de taal van de app. De regels in het logboek zelf blijven Nederlands. */
+private fun groupTitle(group: LogGroup): String = when (group) {
+    LogGroup.FOUTEN -> tr("Fouten", "Errors")
+    LogGroup.SCHERM -> tr("Scherm", "Screen")
+    LogGroup.UPDATE -> "Update"
+    LogGroup.AFSPELEN -> tr("Afspelen", "Playback")
+    LogGroup.AUTO -> "Auto"
+}
+
 @Composable
 private fun LogBanner(problem: LogProblem, onView: () -> Unit) {
-    val whenText = remember(problem.timeMillis) {
-        if (problem.timeMillis <= 0L) "" else SimpleDateFormat("d MMM HH:mm", Locale("nl", "NL")).format(Date(problem.timeMillis)) + " — "
+    val whenText = remember(problem.timeMillis, Lang.isEnglish) {
+        if (problem.timeMillis <= 0L) "" else SimpleDateFormat("d MMM HH:mm", Lang.locale).format(Date(problem.timeMillis)) + " — "
     }
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -272,18 +282,18 @@ private fun LogBanner(problem: LogProblem, onView: () -> Unit) {
     ) {
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
             Text(
-                text = if (problem.isHang) "De app is de vorige keer vastgelopen" else "De app is de vorige keer gecrasht",
+                text = if (problem.isHang) tr("De app is de vorige keer vastgelopen", "The app froze last time") else tr("De app is de vorige keer gecrasht", "The app crashed last time"),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
             Text(
-                text = "$whenText${problem.text}. Details staan in het logboek.",
+                text = tr("$whenText${problem.text}. Details staan in het logboek.", "$whenText${problem.text}. Details are in the log."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
             TextButton(onClick = onView, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp)) {
-                Text("Bekijk ›", fontWeight = FontWeight.Bold)
+                Text(tr("Bekijk ›", "View ›"), fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -296,9 +306,9 @@ private fun VerboseRow(verbose: Boolean, onChange: (Boolean) -> Unit) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Uitgebreid loggen", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Text(tr("Uitgebreid loggen", "Verbose logging"), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
             Text(
-                text = "Ook elke schermwissel, afspeelstap en netwerkfout. Aan zolang je iets zoekt.",
+                text = tr("Ook elke schermwissel, afspeelstap en netwerkfout. Aan zolang je iets zoekt.", "Also every screen change, playback step and network error. On while you are looking for something."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -310,7 +320,7 @@ private fun VerboseRow(verbose: Boolean, onChange: (Boolean) -> Unit) {
 @Composable
 private fun LogFilterRow(selected: String?, onSelect: (String?) -> Unit) {
     val options: List<Pair<String?, String>> =
-        listOf<Pair<String?, String>>(null to "Alles") + LogGroup.values().map { Pair<String?, String>(it.name, it.title) }
+        listOf<Pair<String?, String>>(null to tr("Alles", "All")) + LogGroup.values().map { Pair<String?, String>(it.name, groupTitle(it)) }
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(options) { option ->
             FilterChip(
@@ -339,7 +349,7 @@ private fun LogList(entries: List<LogEntry>, filterKey: String?, modifier: Modif
         if (rows.isEmpty()) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 Text(
-                    text = "Nog geen regels.",
+                    text = tr("Nog geen regels.", "No lines yet."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -409,16 +419,16 @@ private fun LogLine(entry: LogEntry) {
 private fun LogActions(onShare: () -> Unit, onCopy: () -> Unit, onClear: () -> Unit) {
     val padding = PaddingValues(horizontal = 8.dp)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        OutlinedButton(onClick = onShare, contentPadding = padding, modifier = Modifier.weight(1f)) { Text("Delen") }
-        OutlinedButton(onClick = onCopy, contentPadding = padding, modifier = Modifier.weight(1f)) { Text("Kopiëren") }
-        OutlinedButton(onClick = onClear, contentPadding = padding, modifier = Modifier.weight(1f)) { Text("Wissen") }
+        OutlinedButton(onClick = onShare, contentPadding = padding, modifier = Modifier.weight(1f)) { Text(tr("Delen", "Share")) }
+        OutlinedButton(onClick = onCopy, contentPadding = padding, modifier = Modifier.weight(1f)) { Text(tr("Kopiëren", "Copy")) }
+        OutlinedButton(onClick = onClear, contentPadding = padding, modifier = Modifier.weight(1f)) { Text(tr("Wissen", "Clear")) }
     }
 }
 
 @Composable
 private fun LogNote() {
     Text(
-        text = "Het logboek bewaart de laatste 7 dagen, hooguit 500 KB.",
+        text = tr("Het logboek bewaart de laatste 7 dagen, hooguit 500 KB.", "The log keeps the last 7 days, at most 500 KB."),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
@@ -435,36 +445,36 @@ private fun LogShareDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Logboek delen") },
+        title = { Text(tr("Logboek delen", "Share log")) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(
-                    text = "Het logboek gaat als tekstbestand naar de app die je kiest (mail, WhatsApp, Drive…). " +
-                        "Plak of stuur het naar mij als je een fout meldt.",
+                    text = tr("Het logboek gaat als tekstbestand naar de app die je kiest (mail, WhatsApp, Drive…). ", "The log goes as a text file to the app you choose (email, WhatsApp, Drive…). ") +
+                        tr("Plak of stuur het naar mij als je een fout meldt.", "Paste or send it to me when you report a problem."),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 LogCheckRow(
-                    title = "Systeemlog van de app erbij",
-                    subtitle = "Foutmeldingen die Android zelf over SceneRadio bijhield. Dat helpt bij crashes en vastlopers.",
+                    title = tr("Systeemlog van de app erbij", "Include the app's system log"),
+                    subtitle = tr("Foutmeldingen die Android zelf over SceneRadio bijhield. Dat helpt bij crashes en vastlopers.", "Error messages Android itself kept about SceneRadio. This helps with crashes and freezes."),
                     checked = withSystemLog,
                     onChange = { withSystemLog = it }
                 )
                 LogCheckRow(
-                    title = "Apparaatgegevens erbij",
-                    subtitle = "Android-versie, schermgrootte, automatisch draaien aan of uit. Geen naam, geen e-mailadres.",
+                    title = tr("Apparaatgegevens erbij", "Include device information"),
+                    subtitle = tr("Android-versie, schermgrootte, automatisch draaien aan of uit. Geen naam, geen e-mailadres.", "Android version, screen size, auto-rotate on or off. No name, no email address."),
                     checked = withDeviceInfo,
                     onChange = { withDeviceInfo = it }
                 )
             }
         },
         confirmButton = {
-            Button(onClick = { onShare(withSystemLog, withDeviceInfo) }) { Text("Delen") }
+            Button(onClick = { onShare(withSystemLog, withDeviceInfo) }) { Text(tr("Delen", "Share")) }
         },
         dismissButton = {
             Row {
-                TextButton(onClick = onDismiss) { Text("Annuleren") }
-                TextButton(onClick = { onSave(withSystemLog, withDeviceInfo) }) { Text("Opslaan in Downloads") }
+                TextButton(onClick = onDismiss) { Text(tr("Annuleren", "Cancel")) }
+                TextButton(onClick = { onSave(withSystemLog, withDeviceInfo) }) { Text(tr("Opslaan in Downloads", "Save to Downloads")) }
             }
         }
     )

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel as composeViewModel
 import io.github.onneau.sceneradio.AppVersion
 import io.github.onneau.sceneradio.data.DefaultPlaylistSource
+import io.github.onneau.sceneradio.data.backup.BackupInfo
 import io.github.onneau.sceneradio.data.model.Playlist
 import io.github.onneau.sceneradio.ui.components.lastCheckedText
 import io.github.onneau.sceneradio.ui.components.updateSettingsItems
@@ -34,6 +35,8 @@ import io.github.onneau.sceneradio.ui.ManageViewModel
 import io.github.onneau.sceneradio.ui.RadioViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import io.github.onneau.sceneradio.i18n.Lang
+import io.github.onneau.sceneradio.i18n.tr
 
 // De schermen van Instellingen.
 private const val PAGE_MAIN = "hoofd"
@@ -46,6 +49,7 @@ private const val PAGE_LOGOS = "logos"
 private const val PAGE_STATION_PICKER = "zender-kiezen"
 private const val PAGE_STATION_FORM = "zender"
 private const val PAGE_UPDATES = "updates"
+private const val PAGE_BACKUP = "backup"
 private const val PAGE_ABOUT = "over"
 private const val PAGE_LOG = "logboek"
 
@@ -126,6 +130,11 @@ fun SettingsScreen(
             onBack = { page = PAGE_MAIN },
             modifier = modifier
         )
+        PAGE_BACKUP -> BackupScreen(
+            viewModel = viewModel,
+            onBack = { page = PAGE_MAIN },
+            modifier = modifier
+        )
         PAGE_ABOUT -> AboutSettings(
             onBack = { page = PAGE_MAIN },
             onOpenLog = { page = PAGE_LOG },
@@ -141,6 +150,7 @@ fun SettingsScreen(
             onOpenDisplay = { page = PAGE_DISPLAY },
             onOpenChannels = { page = PAGE_CHANNELS },
             onOpenUpdates = { page = PAGE_UPDATES },
+            onOpenBackup = { page = PAGE_BACKUP },
             onOpenAbout = { page = PAGE_ABOUT },
             modifier = modifier
         )
@@ -156,7 +166,7 @@ internal fun SettingsHeader(title: String, onBack: (() -> Unit)?) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (onBack != null) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Terug")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Terug", "Back"))
             }
         }
         Text(
@@ -169,7 +179,7 @@ internal fun SettingsHeader(title: String, onBack: (() -> Unit)?) {
 }
 
 @Composable
-private fun GroupTitle(text: String) {
+internal fun GroupTitle(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleMedium,
@@ -258,6 +268,7 @@ private fun MainSettings(
     onOpenDisplay: () -> Unit,
     onOpenChannels: () -> Unit,
     onOpenUpdates: () -> Unit,
+    onOpenBackup: () -> Unit,
     onOpenAbout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -269,10 +280,16 @@ private fun MainSettings(
     val stations by manage.stations.collectAsState()
     val defaultId by manage.defaultPlaylistId.collectAsState()
 
+    val context = LocalContext.current
+    var showLanguage by remember { mutableStateOf(false) }
+    // Opnieuw gelezen bij elke keer dat dit scherm in beeld komt (na het terugkeren uit het scherm Back-up).
+    val backupMadeAt = remember { BackupInfo.lastMadeAt(context) }
+    val backupSeen = remember { BackupInfo.seen(context) }
+
     val themeLabel = when (themeMode) {
-        "dark" -> "Donker"
-        "light" -> "Licht"
-        else -> "Systeem"
+        "dark" -> tr("Donker", "Dark")
+        "light" -> tr("Licht", "Light")
+        else -> tr("Systeem", "System")
     }
     val stationCount = stations.count { it.playlistId == defaultId }
     val newCount = (if (appUpdate != null) 1 else 0) + (if (listUpdate != null) 1 else 0)
@@ -283,13 +300,26 @@ private fun MainSettings(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item { SettingsHeader("Instellingen", onBack = null) }
+        item { SettingsHeader(tr("Instellingen", "Settings"), onBack = null) }
+        item {
+            MenuCard(
+                icon = Icons.Default.Language,
+                title = "Taal / Language",
+                subtitle = tr("Kies Nederlands of English", "Choose Dutch or English"),
+                status = languageStatus(),
+                badge = if (Lang.hintSeen) null else tr("nieuw", "new"),
+                onClick = {
+                    Lang.markHintSeen(context)
+                    showLanguage = true
+                }
+            )
+        }
         item {
             MenuCard(
                 icon = Icons.Default.Palette,
-                title = "Weergave",
-                subtitle = "Thema en de visualizer van het liggende scherm",
-                status = "Thema: $themeLabel · Visualizer",
+                title = tr("Weergave", "Display"),
+                subtitle = tr("Thema en de visualizer van het liggende scherm", "Theme and the landscape-screen visualizer"),
+                status = tr("Thema: $themeLabel · Visualizer", "Theme: $themeLabel · Visualizer"),
                 badge = null,
                 onClick = onOpenDisplay
             )
@@ -297,9 +327,9 @@ private fun MainSettings(
         item {
             MenuCard(
                 icon = Icons.Default.Radio,
-                title = "Zenders",
-                subtitle = "Zenders en logo's beheren, afspeellijsten",
-                status = "$stationCount zenders · ${playlists.size} afspeellijsten",
+                title = tr("Zenders", "Stations"),
+                subtitle = tr("Zenders en logo's beheren, afspeellijsten", "Manage stations and logos, playlists"),
+                status = tr("$stationCount zenders · ${playlists.size} afspeellijsten", "$stationCount stations · ${playlists.size} playlists"),
                 badge = null,
                 onClick = onOpenChannels
             )
@@ -308,31 +338,53 @@ private fun MainSettings(
             MenuCard(
                 icon = Icons.Default.Sync,
                 title = "Updates",
-                subtitle = "De app en de standaard zenderlijst",
+                subtitle = tr("De app en de standaard zenderlijst", "The app and the default station list"),
                 status = lastCheckedText(updatePrefs.checkedAt),
-                badge = if (newCount > 0) "$newCount nieuw" else null,
+                badge = if (newCount > 0) tr("$newCount nieuw", "$newCount new") else null,
                 onClick = onOpenUpdates
             )
         }
         item {
             MenuCard(
+                icon = Icons.Default.Backup,
+                title = tr("Back-up", "Backup"),
+                subtitle = tr("Instellingen en eigen wijzigingen bewaren of terugzetten", "Save or restore your settings and own changes"),
+                status = backupStatus(backupMadeAt),
+                badge = if (backupSeen) null else tr("nieuw", "new"),
+                onClick = onOpenBackup
+            )
+        }
+        item {
+            MenuCard(
                 icon = Icons.Default.Info,
-                title = "Over SceneRadio",
-                subtitle = "Versie en privacy",
-                status = "Versie ${AppVersion.NUMBER}",
+                title = tr("Over SceneRadio", "About SceneRadio"),
+                subtitle = tr("Versie en privacy", "Version and privacy"),
+                status = tr("Versie ${AppVersion.NUMBER}", "Version ${AppVersion.NUMBER}"),
                 badge = null,
                 onClick = onOpenAbout
             )
         }
         item {
             Text(
-                text = "De onderwerpen staan op volgorde van gebruik. Bij Updates laat een kleine badge zien of er iets nieuws is.",
+                text = tr("De onderwerpen staan op volgorde van gebruik. Bij Updates laat een kleine badge zien of er iets nieuws is.", "The topics are in order of use. On Updates, a small badge shows whether there is something new."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
+
+    if (showLanguage) LanguageDialog(onDismiss = { showLanguage = false })
 }
+
+private fun backupStatus(madeAt: Long): String =
+    if (madeAt > 0L) {
+        val date = java.text.DateFormat
+            .getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT, Lang.locale)
+            .format(java.util.Date(madeAt))
+        tr("Laatste back-up: $date", "Last backup: $date")
+    } else {
+        tr("Nog geen back-up gemaakt", "No backup made yet")
+    }
 
 // ------------------------------------------------------------------------------------------------
 // Weergave
@@ -356,9 +408,9 @@ private fun DisplaySettings(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item { SettingsHeader("Weergave", onBack) }
+        item { SettingsHeader(tr("Weergave", "Display"), onBack) }
 
-        item { GroupTitle("Thema") }
+        item { GroupTitle(tr("Thema", "Theme")) }
         item {
             Surface(
                 shape = RoundedCornerShape(16.dp),
@@ -367,7 +419,7 @@ private fun DisplaySettings(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Kleurthema van de app",
+                        text = tr("Kleurthema van de app", "Color theme of the app"),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -376,7 +428,7 @@ private fun DisplaySettings(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        listOf("system" to "Systeem", "dark" to "Donker", "light" to "Licht").forEach { (mode, label) ->
+                        listOf("system" to tr("Systeem", "System"), "dark" to tr("Donker", "Dark"), "light" to tr("Licht", "Light")).forEach { (mode, label) ->
                             FilterChip(
                                 selected = themeMode == mode,
                                 onClick = { viewModel.setThemeMode(mode) },
@@ -389,7 +441,7 @@ private fun DisplaySettings(
             }
         }
 
-        item { GroupTitle("Bediening") }
+        item { GroupTitle(tr("Bediening", "Controls")) }
         item {
             Surface(
                 shape = RoundedCornerShape(16.dp),
@@ -400,12 +452,12 @@ private fun DisplaySettings(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Grote bediening",
+                                text = tr("Grote bediening", "Large controls"),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "Grotere tikvlakken, groter menu onderin en een zichtbaar sterretje op elke zender. Handig op een auto-radio.",
+                                text = tr("Grotere tikvlakken, groter menu onderin en een zichtbaar sterretje op elke zender. Handig op een auto-radio.", "Larger tap targets, a larger menu at the bottom and a visible star on every station. Handy on a car radio."),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -418,7 +470,7 @@ private fun DisplaySettings(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Staat vanzelf aan op een apparaat dat zichzelf als auto meldt; je kunt hem hier altijd zelf aan of uit zetten.",
+                        text = tr("Staat vanzelf aan op een apparaat dat zichzelf als auto meldt; je kunt hem hier altijd zelf aan of uit zetten.", "Turns on by itself on a device that reports itself as a car; you can always switch it on or off here."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -426,7 +478,7 @@ private fun DisplaySettings(
             }
         }
 
-        item { GroupTitle("Speler") }
+        item { GroupTitle(tr("Speler", "Player")) }
         item {
             Surface(
                 shape = RoundedCornerShape(16.dp),
@@ -437,12 +489,12 @@ private fun DisplaySettings(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Hoes in de speler",
+                                text = tr("Hoes in de speler", "Cover in the player"),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "Toont de hoes van het nummer groot in de speler, met het zenderlogo als ronde badge. Tik op de hoes voor volledig scherm. Is er geen hoes, dan blijft het zenderlogo groot staan.",
+                                text = tr("Toont de hoes van het nummer groot in de speler, met het zenderlogo als ronde badge. Tik op de hoes voor volledig scherm. Is er geen hoes, dan blijft het zenderlogo groot staan.", "Shows the track's cover large in the player, with the station logo as a round badge. Tap the cover for full screen. If there is no cover, the station logo stays large."),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -455,7 +507,7 @@ private fun DisplaySettings(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "De hoes wordt via internet opgezocht: alleen artiest en titel gaan naar MusicBrainz en Cover Art Archive. Staat standaard uit. De positie van de hoes en de foto van de artiest stel je in bij Visualizer > Hoes van het nummer.",
+                        text = tr("De hoes wordt via internet opgezocht: alleen artiest en titel gaan naar MusicBrainz en Cover Art Archive. Staat standaard uit. De positie van de hoes en de foto van de artiest stel je in bij Visualizer > Hoes van het nummer.", "The cover is looked up online: only artist and title go to MusicBrainz and Cover Art Archive. Off by default. You set the cover position and the artist photo under Visualizer > Track cover."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -491,7 +543,7 @@ private fun DisplaySettings(
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "Snelheid, grootte, kleuren, sterren, hoes, equalizer, slogans en dimmen van het liggende scherm",
+                            text = tr("Snelheid, grootte, kleuren, sterren, hoes, equalizer, slogans en dimmen van het liggende scherm", "Speed, size, colors, stars, cover, equalizer, slogans and dimming of the landscape screen"),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -551,7 +603,7 @@ private fun ChannelSettings(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item { SettingsHeader("Zenders", onBack) }
+        item { SettingsHeader(tr("Zenders", "Stations"), onBack) }
 
         exportMessage?.let { message ->
             item {
@@ -569,7 +621,7 @@ private fun ChannelSettings(
             }
         }
 
-        item { GroupTitle("Zenders beheren") }
+        item { GroupTitle(tr("Zenders beheren", "Manage stations")) }
         item {
             Surface(
                 shape = RoundedCornerShape(16.dp),
@@ -577,15 +629,15 @@ private fun ChannelSettings(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    HubRow(Icons.Default.Add, "Zender toevoegen of bewerken", "Naam, stream, groep en logo", false, onOpenStations)
-                    HubRow(Icons.Default.Image, "Logo's beheren", "Eén logo aan meerdere zenders koppelen", false, onOpenLogos)
-                    HubRow(Icons.Default.GraphicEq, "Streams controleren", "Test alle zenders op deze telefoon", false, onOpenStreams)
-                    HubRow(Icons.Default.Download, "Zenderlijst downloaden (.m3u)", "Favorieten, standaardlijst of een geïmporteerde lijst", false) { showExport = true }
+                    HubRow(Icons.Default.Add, tr("Zender toevoegen of bewerken", "Add or edit station"), tr("Naam, stream, groep en logo", "Name, stream, group and logo"), false, onOpenStations)
+                    HubRow(Icons.Default.Image, tr("Logo's beheren", "Manage logos"), tr("Eén logo aan meerdere zenders koppelen", "Link one logo to several stations"), false, onOpenLogos)
+                    HubRow(Icons.Default.GraphicEq, tr("Streams controleren", "Check streams"), tr("Test alle zenders op deze telefoon", "Test all stations on this phone"), false, onOpenStreams)
+                    HubRow(Icons.Default.Download, tr("Zenderlijst downloaden (.m3u)", "Download station list (.m3u)"), tr("Favorieten, standaardlijst of een geïmporteerde lijst", "Favorites, default list or an imported list"), false) { showExport = true }
                 }
             }
         }
 
-        item { GroupTitle("Standaard zenderlijst") }
+        item { GroupTitle(tr("Standaard zenderlijst", "Default station list")) }
         item {
             Surface(
                 shape = RoundedCornerShape(16.dp),
@@ -597,12 +649,12 @@ private fun ChannelSettings(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = "${DefaultPlaylistSource.PLAYLIST_NAME} · $count zenders",
+                        text = tr("${DefaultPlaylistSource.PLAYLIST_NAME} · $count zenders", "${DefaultPlaylistSource.PLAYLIST_NAME} · $count stations"),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Repository ${DefaultPlaylistSource.REPO}. Bijwerken en controleren staat onder Updates.",
+                        text = tr("Repository ${DefaultPlaylistSource.REPO}. Bijwerken en controleren staat onder Updates.", "Repository ${DefaultPlaylistSource.REPO}. Updating and checking are under Updates."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -611,18 +663,18 @@ private fun ChannelSettings(
         }
         item {
             Text(
-                text = "Wijzigingen aan zenders en logo's blijven op dit toestel. Een update van de standaardlijst zet de naam, de stream en de genres van zenders uit die lijst weer terug; zenders die je zelf toevoegt en logo's die je zelf kiest blijven staan.",
+                text = tr("Wijzigingen aan zenders en logo's blijven op dit toestel. Een update van de standaardlijst zet de naam, de stream en de genres van zenders uit die lijst weer terug; zenders die je zelf toevoegt en logo's die je zelf kiest blijven staan.", "Changes to stations and logos stay on this device. An update of the default list restores the name, stream and genres of stations from that list; stations you add yourself and logos you choose yourself are kept."),
                 style = MaterialTheme.typography.bodyMedium
             )
         }
 
         // Afspeellijsten beheer (hernoemen, verwijderen, legen)
-        item { GroupTitle("Geïmporteerde afspeellijsten (${playlists.size})") }
+        item { GroupTitle(tr("Geïmporteerde afspeellijsten (${playlists.size})", "Imported playlists (${playlists.size})")) }
 
         if (playlists.isEmpty()) {
             item {
                 Text(
-                    text = "Nog geen afspeellijsten geïmporteerd.",
+                    text = tr("Nog geen afspeellijsten geïmporteerd.", "No playlists imported yet."),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -654,7 +706,7 @@ private fun ChannelSettings(
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "${pl.stationCount} zenders • ${if (pl.isLocalFile) "Lokaal bestand" else "URL / Online"}",
+                                text = tr("${pl.stationCount} zenders • ${if (pl.isLocalFile) "Lokaal bestand" else "URL / Online"}", "${pl.stationCount} stations • ${if (pl.isLocalFile) "Local file" else "URL / Online"}"),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -665,21 +717,21 @@ private fun ChannelSettings(
                             playlistToRename = pl
                             renameText = pl.name
                         }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Hernoemen")
+                            Icon(Icons.Default.Edit, contentDescription = tr("Hernoemen", "Rename"))
                         }
 
                         // Legen (alle zenders in de lijst wissen)
                         IconButton(onClick = {
                             playlistToClear = pl
                         }) {
-                            Icon(Icons.Default.CleaningServices, contentDescription = "Lijst legen")
+                            Icon(Icons.Default.CleaningServices, contentDescription = tr("Lijst legen", "Empty list"))
                         }
 
                         // Verwijderen
                         IconButton(onClick = {
                             playlistToDelete = pl
                         }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Verwijderen", tint = MaterialTheme.colorScheme.error)
+                            Icon(Icons.Default.Delete, contentDescription = tr("Verwijderen", "Delete"), tint = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -690,14 +742,14 @@ private fun ChannelSettings(
     // Zenderlijst als .m3u bewaren in Downloads of delen met een andere app
     if (showExport) {
         val choices = buildList {
-            add(ExportChoice(null, "Favorieten", "${favorites.size} zenders", "favorieten"))
+            add(ExportChoice(null, tr("Favorieten", "Favorites"), tr("${favorites.size} zenders", "${favorites.size} stations"), "favorieten"))
             playlists.sortedByDescending { it.id == defaultId }.forEach { pl ->
                 val isDefault = pl.id == defaultId
                 add(
                     ExportChoice(
                         id = pl.id,
-                        title = if (isDefault) "Standaard zenderlijst" else pl.name,
-                        subtitle = "${pl.stationCount} zenders" + if (isDefault) " · ${pl.name}" else "",
+                        title = if (isDefault) tr("Standaard zenderlijst", "Default station list") else pl.name,
+                        subtitle = tr("${pl.stationCount} zenders", "${pl.stationCount} stations") + if (isDefault) " · ${pl.name}" else "",
                         label = pl.name
                     )
                 )
@@ -718,7 +770,7 @@ private fun ChannelSettings(
                         try {
                             context.startActivity(intent)
                         } catch (e: Exception) {
-                            viewModel.exportMessage.value = "Delen mislukt: ${e.message ?: "geen app gevonden"}"
+                            viewModel.exportMessage.value = tr("Delen mislukt: ${e.message ?: "geen app gevonden"}", "Sharing failed: ${e.message ?: "no app found"}")
                         }
                     }
                 }
@@ -730,12 +782,12 @@ private fun ChannelSettings(
     if (playlistToRename != null) {
         AlertDialog(
             onDismissRequest = { playlistToRename = null },
-            title = { Text("Afspeellijst Hernoemen") },
+            title = { Text(tr("Afspeellijst Hernoemen", "Rename Playlist")) },
             text = {
                 OutlinedTextField(
                     value = renameText,
                     onValueChange = { renameText = it },
-                    label = { Text("Nieuwe naam") },
+                    label = { Text(tr("Nieuwe naam", "New name")) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -747,12 +799,12 @@ private fun ChannelSettings(
                         playlistToRename = null
                     }
                 ) {
-                    Text("Opslaan")
+                    Text(tr("Opslaan", "Save"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { playlistToRename = null }) {
-                    Text("Annuleren")
+                    Text(tr("Annuleren", "Cancel"))
                 }
             }
         )
@@ -762,9 +814,9 @@ private fun ChannelSettings(
     if (playlistToClear != null) {
         AlertDialog(
             onDismissRequest = { playlistToClear = null },
-            title = { Text("Afspeellijst Legen") },
+            title = { Text(tr("Afspeellijst Legen", "Empty Playlist")) },
             text = {
-                Text("Weet je zeker dat je alle zenders uit '${playlistToClear?.name}' wilt wissen? De lege afspeellijst blijft bewaard.")
+                Text(tr("Weet je zeker dat je alle zenders uit '${playlistToClear?.name}' wilt wissen? De lege afspeellijst blijft bewaard.", "Are you sure you want to remove all stations from '${playlistToClear?.name}'? The empty playlist is kept."))
             },
             confirmButton = {
                 Button(
@@ -773,12 +825,12 @@ private fun ChannelSettings(
                         playlistToClear = null
                     }
                 ) {
-                    Text("Lijst Legen")
+                    Text(tr("Lijst Legen", "Empty List"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { playlistToClear = null }) {
-                    Text("Annuleren")
+                    Text(tr("Annuleren", "Cancel"))
                 }
             }
         )
@@ -788,9 +840,9 @@ private fun ChannelSettings(
     if (playlistToDelete != null) {
         AlertDialog(
             onDismissRequest = { playlistToDelete = null },
-            title = { Text("Afspeellijst Verwijderen") },
+            title = { Text(tr("Afspeellijst Verwijderen", "Delete Playlist")) },
             text = {
-                Text("Weet je zeker dat je de afspeellijst '${playlistToDelete?.name}' en alle bijbehorende zenders wilt verwijderen?")
+                Text(tr("Weet je zeker dat je de afspeellijst '${playlistToDelete?.name}' en alle bijbehorende zenders wilt verwijderen?", "Are you sure you want to delete the playlist '${playlistToDelete?.name}' and all its stations?"))
             },
             confirmButton = {
                 Button(
@@ -800,12 +852,12 @@ private fun ChannelSettings(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Verwijderen")
+                    Text(tr("Verwijderen", "Delete"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { playlistToDelete = null }) {
-                    Text("Annuleren")
+                    Text(tr("Annuleren", "Cancel"))
                 }
             }
         )
@@ -837,10 +889,10 @@ private fun UpdatesSettings(
         item { SettingsHeader("Updates", onBack) }
 
         // De app: handmatig of automatisch controleren op een nieuwe versie
-        updateSettingsItems(viewModel, "De app")
+        updateSettingsItems(viewModel, tr("De app", "The app"))
 
         // Standaard zenderlijst (openbare GitHub-repository)
-        item { GroupTitle("Standaard zenderlijst") }
+        item { GroupTitle(tr("Standaard zenderlijst", "Default station list")) }
         item {
             Surface(
                 shape = RoundedCornerShape(16.dp),
@@ -852,17 +904,17 @@ private fun UpdatesSettings(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Nederlandse radio",
+                        text = tr("Nederlandse radio", "Dutch radio"),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
                         text = if (listPrefs.updatedAt > 0L) {
-                            "Laatst bijgewerkt: " + java.text.DateFormat
+                            tr("Laatst bijgewerkt: ", "Last updated: ") + java.text.DateFormat
                                 .getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT)
                                 .format(java.util.Date(listPrefs.updatedAt))
                         } else {
-                            "Nog niet gedownload."
+                            tr("Nog niet gedownload.", "Not downloaded yet.")
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -882,9 +934,9 @@ private fun UpdatesSettings(
                         ) {
                             Text(
                                 when {
-                                    isApplying -> "Bezig met bijwerken…"
-                                    isChecking -> "Controleren…"
-                                    else -> "Controleren en bijwerken"
+                                    isApplying -> tr("Bezig met bijwerken…", "Updating…")
+                                    isChecking -> tr("Controleren…", "Checking…")
+                                    else -> tr("Controleren en bijwerken", "Check and update")
                                 }
                             )
                         }
@@ -912,7 +964,7 @@ private fun AboutSettings(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item { SettingsHeader("Over SceneRadio", onBack) }
+        item { SettingsHeader(tr("Over SceneRadio", "About SceneRadio"), onBack) }
 
         item {
             Surface(
@@ -930,7 +982,7 @@ private fun AboutSettings(
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Versie ${AppVersion.NUMBER} · build ${AppVersion.BUILD}",
+                        text = tr("Versie ${AppVersion.NUMBER} · build ${AppVersion.BUILD}", "Version ${AppVersion.NUMBER} · build ${AppVersion.BUILD}"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -947,15 +999,15 @@ private fun AboutSettings(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Geen trackers, geen reclame, geen account",
+                        text = tr("Geen trackers, geen reclame, geen account", "No trackers, no ads, no account"),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "SceneRadio bevat geen trackers, geen Firebase, geen reclame en vraagt geen account. Zenders, favorieten en instellingen blijven op dit apparaat. " +
-                            "De app maakt alleen verbinding met de streams van de zenders zelf, met GitHub (de zenderlijst, de logo's en updates; GitHub ziet daarbij je IP-adres), " +
-                            "met Radio Browser als je daar zoekt, en met de bronnen voor hoezen en foto's als je die zelf aanzet.",
+                        text = tr("SceneRadio bevat geen trackers, geen Firebase, geen reclame en vraagt geen account. Zenders, favorieten en instellingen blijven op dit apparaat. ", "SceneRadio contains no trackers, no Firebase, no ads and asks for no account. Stations, favorites and settings stay on this device. ") +
+                            tr("De app maakt alleen verbinding met de streams van de zenders zelf, met GitHub (de zenderlijst, de logo's en updates; GitHub ziet daarbij je IP-adres), ", "The app only connects to the streams of the stations themselves, to GitHub (the station list, the logos and updates; GitHub sees your IP address in the process), ") +
+                            tr("met Radio Browser als je daar zoekt, en met de bronnen voor hoezen en foto's als je die zelf aanzet.", "to Radio Browser when you search there, and to the sources for covers and photos when you turn those on yourself."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -972,15 +1024,15 @@ private fun AboutSettings(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Bronnen van hoezen en foto's",
+                        text = tr("Bronnen van hoezen en foto's", "Sources of covers and photos"),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Hoezen: MusicBrainz en Cover Art Archive. Foto's van artiesten: Wikimedia Commons (via MusicBrainz en Wikidata). " +
-                            "Elke hoes en elke foto is van zijn maker of rechthebbende; Wikimedia Commons-foto's hebben elk een eigen licentie. " +
-                            "Er wordt alleen opgezocht als je dat in de instellingen aanzet, en dan gaan alleen artiest, titel of de naam van de artiest over de lijn.",
+                        text = tr("Hoezen: MusicBrainz en Cover Art Archive. Foto's van artiesten: Wikimedia Commons (via MusicBrainz en Wikidata). ", "Covers: MusicBrainz and Cover Art Archive. Artist photos: Wikimedia Commons (via MusicBrainz and Wikidata). ") +
+                            tr("Elke hoes en elke foto is van zijn maker of rechthebbende; Wikimedia Commons-foto's hebben elk een eigen licentie. ", "Every cover and every photo belongs to its creator or rights holder; Wikimedia Commons photos each have their own license. ") +
+                            tr("Er wordt alleen opgezocht als je dat in de instellingen aanzet, en dan gaan alleen artiest, titel of de naam van de artiest over de lijn.", "Lookups only happen when you turn that on in settings, and then only the artist, the title or the artist's name are sent over the wire."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -998,8 +1050,8 @@ private fun AboutSettings(
                 Row(modifier = Modifier.padding(horizontal = 16.dp)) {
                     HubRow(
                         icon = Icons.Default.Description,
-                        title = "Logboek",
-                        subtitle = "Wat de app deed, ook na een crash. Om fouten op te sporen.",
+                        title = tr("Logboek", "Log"),
+                        subtitle = tr("Wat de app deed, ook na een crash. Om fouten op te sporen.", "What the app did, even after a crash. For tracking down problems."),
                         busy = false,
                         onClick = onOpenLog
                     )
@@ -1008,7 +1060,7 @@ private fun AboutSettings(
         }
         item {
             Text(
-                text = "Het logboek staat alleen op dit toestel en wordt nooit vanzelf verstuurd. Wachtwoorden en sleutels komen er niet in.",
+                text = tr("Het logboek staat alleen op dit toestel en wordt nooit vanzelf verstuurd. Wachtwoorden en sleutels komen er niet in.", "The log is only on this device and is never sent by itself. Passwords and keys are not included."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1034,11 +1086,11 @@ private fun M3uExportDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Zenderlijst downloaden") },
+        title = { Text(tr("Zenderlijst downloaden", "Download station list")) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(
-                    text = "Kies een lijst en bewaar hem als .m3u-bestand in Downloads, of deel hem met een andere app.",
+                    text = tr("Kies een lijst en bewaar hem als .m3u-bestand in Downloads, of deel hem met een andere app.", "Choose a list and save it as an .m3u file in Downloads, or share it with another app."),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -1067,12 +1119,12 @@ private fun M3uExportDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onSave(selected) }) { Text("Opslaan in Downloads") }
+            Button(onClick = { onSave(selected) }) { Text(tr("Opslaan in Downloads", "Save to Downloads")) }
         },
         dismissButton = {
             Row {
-                TextButton(onClick = onDismiss) { Text("Annuleren") }
-                TextButton(onClick = { onShare(selected) }) { Text("Delen") }
+                TextButton(onClick = onDismiss) { Text(tr("Annuleren", "Cancel")) }
+                TextButton(onClick = { onShare(selected) }) { Text(tr("Delen", "Share")) }
             }
         }
     )

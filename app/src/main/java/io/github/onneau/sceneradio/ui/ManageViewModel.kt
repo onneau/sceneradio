@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import io.github.onneau.sceneradio.i18n.tr
 
 /** Voortgang en uitkomst van "Streams controleren". */
 data class StreamCheckState(
@@ -89,8 +90,8 @@ class ManageViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun failureText(e: Exception): String = when (e) {
-        is IllegalArgumentException -> e.message ?: "Dit kon niet worden verwerkt."
-        else -> "Mislukt: ${e.message ?: e.javaClass.simpleName}"
+        is IllegalArgumentException -> e.message ?: tr("Dit kon niet worden verwerkt.", "This could not be processed.")
+        else -> tr("Mislukt: ${e.message ?: e.javaClass.simpleName}", "Failed: ${e.message ?: e.javaClass.simpleName}")
     }
 
     // ---------------------------------------------------------------- streams controleren
@@ -163,12 +164,12 @@ class ManageViewModel(application: Application) : AndroidViewModel(application) 
         message: MutableStateFlow<String?>
     ) {
         viewModelScope.launch {
-            message.value = "Afbeelding verwerken…"
+            message.value = tr("Afbeelding verwerken…", "Processing image…")
             try {
                 val pending = withContext(Dispatchers.IO) {
                     val jpeg = LogoTools.toJpeg(load())
                     val preview = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size)
-                        ?: throw IllegalArgumentException("Dit bestand is geen bruikbare afbeelding.")
+                        ?: throw IllegalArgumentException(tr("Dit bestand is geen bruikbare afbeelding.", "This file is not a usable image."))
                     PendingLogo(jpeg, preview)
                 }
                 target.value = pending
@@ -176,7 +177,7 @@ class ManageViewModel(application: Application) : AndroidViewModel(application) 
             } catch (e: CancellationException) {
                 throw e
             } catch (e: OutOfMemoryError) {
-                message.value = "De afbeelding is te groot voor dit toestel."
+                message.value = tr("De afbeelding is te groot voor dit toestel.", "The image is too large for this device.")
             } catch (e: Exception) {
                 message.value = failureText(e)
             }
@@ -204,7 +205,7 @@ class ManageViewModel(application: Application) : AndroidViewModel(application) 
                         repository.updateStationLogo(station.id, url)
                     }
                 }
-                notice.value = "Logo gekoppeld aan ${chosen.size} ${if (chosen.size == 1) "zender" else "zenders"}."
+                notice.value = tr("Logo gekoppeld aan ${chosen.size} ${if (chosen.size == 1) "zender" else "zenders"}.", "Logo linked to ${chosen.size} ${if (chosen.size == 1) "station" else "stations"}.")
                 clearSelection()
                 bulkLogo.value = null
                 onDone()
@@ -287,10 +288,10 @@ class ManageViewModel(application: Application) : AndroidViewModel(application) 
         val genres = normalizeGenres(f.genres)
         val startsOk = url.startsWith("http://", ignoreCase = true) || url.startsWith("https://", ignoreCase = true)
         val problem = when {
-            name.isEmpty() -> "Naam is verplicht."
-            name.length > 80 -> "Naam is te lang (maximaal 80 tekens)."
-            !startsOk || url.contains(' ') -> "De stream-URL moet met http:// of https:// beginnen en mag geen spaties bevatten."
-            genres.isEmpty() -> "Geef minstens één genre op."
+            name.isEmpty() -> tr("Naam is verplicht.", "Name is required.")
+            name.length > 80 -> tr("Naam is te lang (maximaal 80 tekens).", "Name is too long (maximum 80 characters).")
+            !startsOk || url.contains(' ') -> tr("De stream-URL moet met http:// of https:// beginnen en mag geen spaties bevatten.", "The stream URL must start with http:// or https:// and must not contain spaces.")
+            genres.isEmpty() -> tr("Geef minstens één genre op.", "Enter at least one genre.")
             else -> null
         }
         if (problem != null) {
@@ -310,7 +311,7 @@ class ManageViewModel(application: Application) : AndroidViewModel(application) 
                     val taken = repository.allStations.first()
                         .any { it.playlistId == defaultId && slugify(it.name) == slug }
                     if (taken) {
-                        formMessage.value = "Er bestaat al een zender met deze naam."
+                        formMessage.value = tr("Er bestaat al een zender met deze naam.", "A station with this name already exists.")
                         return@launch
                     }
                 }
@@ -326,7 +327,7 @@ class ManageViewModel(application: Application) : AndroidViewModel(application) 
                     repository.updateStationLogo(stationId, logoUrl)
                 }
 
-                notice.value = "'$name' is opgeslagen op dit toestel."
+                notice.value = tr("'$name' is opgeslagen op dit toestel.", "'$name' was saved on this device.")
                 onSaved()
             } catch (e: CancellationException) {
                 throw e

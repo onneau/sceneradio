@@ -52,8 +52,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import io.github.onneau.sceneradio.i18n.Lang
+import io.github.onneau.sceneradio.i18n.tr
 
-private val DUTCH = Locale.forLanguageTag("nl-NL")
 
 /**
  * Toont de updatemelding ("Update beschikbaar" met wat er nieuw is, het downloaden en de eenmalige
@@ -81,7 +82,7 @@ fun UpdateHost(viewModel: RadioViewModel) {
             viewModel.onInstallLaunched()
         } catch (e: Exception) {
             AppLog.e(LogCategory.UPDATE, "installatiescherm kon niet worden geopend", e)
-            viewModel.reportUpdateError("Het installatiescherm kon niet worden geopend: ${e.message ?: "onbekende fout"}")
+            viewModel.reportUpdateError(tr("Het installatiescherm kon niet worden geopend: ${e.message ?: "onbekende fout"}", "The install screen could not be opened: ${e.message ?: "unknown error"}"))
         }
     }
 
@@ -122,7 +123,7 @@ fun UpdateHost(viewModel: RadioViewModel) {
                     context.startActivity(AppUpdater.permissionIntent(context))
                 } catch (e: Exception) {
                     viewModel.reportUpdateError(
-                        "Open zelf: Instellingen > Apps > Speciale app-toegang > Onbekende apps installeren > SceneRadio."
+                        tr("Open zelf: Instellingen > Apps > Speciale app-toegang > Onbekende apps installeren > SceneRadio.", "Open it yourself: Settings > Apps > Special app access > Install unknown apps > SceneRadio.")
                     )
                 }
             }
@@ -152,9 +153,9 @@ private fun UpdateDialog(
         title = {
             Text(
                 when (download) {
-                    is UpdateDownload.Downloading, is UpdateDownload.Verifying -> "Update downloaden…"
-                    is UpdateDownload.Ready -> if (saveOnly) "Update gedownload" else "Klaar om te installeren"
-                    else -> "Update beschikbaar"
+                    is UpdateDownload.Downloading, is UpdateDownload.Verifying -> tr("Update downloaden…", "Downloading update…")
+                    is UpdateDownload.Ready -> if (saveOnly) tr("Update gedownload", "Update downloaded") else tr("Klaar om te installeren", "Ready to install")
+                    else -> tr("Update beschikbaar", "Update available")
                 }
             )
         },
@@ -164,7 +165,7 @@ private fun UpdateDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Versie ${info.version} · jij hebt ${AppVersion.NUMBER}",
+                    text = tr("Versie ${info.version} · jij hebt ${AppVersion.NUMBER}", "Version ${info.version} · you have ${AppVersion.NUMBER}"),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 when (download) {
@@ -175,14 +176,14 @@ private fun UpdateDialog(
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Text(
-                                text = "${megabytes(download.done)} van ${megabytes(download.total)}",
+                                text = tr("${megabytes(download.done)} van ${megabytes(download.total)}", "${megabytes(download.done)} of ${megabytes(download.total)}"),
                                 style = MaterialTheme.typography.bodySmall
                             )
                         } else {
                             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                         }
                         Text(
-                            text = "Het pakket wordt gecontroleerd op de juiste ondertekening voordat Android het mag installeren.",
+                            text = tr("Het pakket wordt gecontroleerd op de juiste ondertekening voordat Android het mag installeren.", "The package is checked for the correct signature before Android may install it."),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -190,30 +191,30 @@ private fun UpdateDialog(
                     is UpdateDownload.Verifying -> {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                         Text(
-                            text = "Ondertekening controleren…",
+                            text = tr("Ondertekening controleren…", "Checking signature…"),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
                     is UpdateDownload.Ready -> {
                         Text(
                             text = if (saveOnly) {
-                                "De update is gedownload en de ondertekening klopt. Het installatiescherm is niet geopend."
+                                tr("De update is gedownload en de ondertekening klopt. Het installatiescherm is niet geopend.", "The update is downloaded and the signature is valid. The install screen was not opened.")
                             } else {
-                                "De update is gedownload en de ondertekening klopt. Android vraagt zo om bevestiging. " +
-                                    "Je instellingen, favorieten en lijsten blijven bewaard."
+                                tr("De update is gedownload en de ondertekening klopt. Android vraagt zo om bevestiging. ", "The update is downloaded and the signature is valid. Android will ask for confirmation shortly. ") +
+                                    tr("Je instellingen, favorieten en lijsten blijven bewaard.", "Your settings, favorites and lists are kept.")
                             },
                             style = MaterialTheme.typography.bodyMedium
                         )
                         if (!saveOnly) {
                             Text(
-                                text = "Opent het installatiescherm niet (bijvoorbeeld op een auto-radio)? " +
-                                    "Zet het bestand dan in Downloads en open het daar.",
+                                text = tr("Opent het installatiescherm niet (bijvoorbeeld op een auto-radio)? ", "Does the install screen not open (for example on a car radio)? ") +
+                                    tr("Zet het bestand dan in Downloads en open het daar.", "Then save the file to Downloads and open it there."),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         OutlinedButton(onClick = onSaveToDownloads, modifier = Modifier.fillMaxWidth()) {
-                            Text("Opslaan in Downloads")
+                            Text(tr("Opslaan in Downloads", "Save to Downloads"))
                         }
                         if (savedMessage != null) {
                             Text(
@@ -226,7 +227,7 @@ private fun UpdateDialog(
                     else -> {
                         if (info.notes.isNotEmpty()) {
                             Text(
-                                text = "WAT IS NIEUW",
+                                text = tr("WAT IS NIEUW", "WHAT'S NEW"),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -240,7 +241,7 @@ private fun UpdateDialog(
                             }
                         }
                         val meta = listOfNotNull(
-                            publishedText(info.publishedAt)?.let { "Gepubliceerd $it" },
+                            publishedText(info.publishedAt)?.let { tr("Gepubliceerd $it", "Published $it") },
                             if (info.sizeBytes > 0) megabytes(info.sizeBytes) else null
                         ).joinToString(" · ")
                         if (meta.isNotEmpty()) {
@@ -252,13 +253,13 @@ private fun UpdateDialog(
                         }
                         // De keuze staat hier, vóór het downloaden: op een auto-radio opent het installatiescherm soms niet.
                         Text(
-                            text = "Opent het installatiescherm niet (bijvoorbeeld op een auto-radio)? " +
-                                "Kies dan Alleen downloaden: de update gaat naar Downloads en je opent hem daar zelf.",
+                            text = tr("Opent het installatiescherm niet (bijvoorbeeld op een auto-radio)? ", "Does the install screen not open (for example on a car radio)? ") +
+                                tr("Kies dan Alleen downloaden: de update gaat naar Downloads en je opent hem daar zelf.", "Then choose Download only: the update goes to Downloads and you open it there yourself."),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         OutlinedButton(onClick = onDownloadOnly, modifier = Modifier.fillMaxWidth()) {
-                            Text("Alleen downloaden (in Downloads)")
+                            Text(tr("Alleen downloaden (in Downloads)", "Download only (to Downloads)"))
                         }
                     }
                 }
@@ -274,13 +275,13 @@ private fun UpdateDialog(
         confirmButton = {
             when (download) {
                 is UpdateDownload.Downloading, is UpdateDownload.Verifying -> {}
-                is UpdateDownload.Ready -> Button(onClick = onInstall) { Text("Installeren") }
-                else -> Button(onClick = onUpdate) { Text(if (error != null) "Opnieuw proberen" else "Nu updaten") }
+                is UpdateDownload.Ready -> Button(onClick = onInstall) { Text(tr("Installeren", "Install")) }
+                else -> Button(onClick = onUpdate) { Text(if (error != null) tr("Opnieuw proberen", "Try again") else tr("Nu updaten", "Update now")) }
             }
         },
         dismissButton = {
             when (download) {
-                is UpdateDownload.Downloading -> TextButton(onClick = onCancel) { Text("Annuleren") }
+                is UpdateDownload.Downloading -> TextButton(onClick = onCancel) { Text(tr("Annuleren", "Cancel")) }
                 is UpdateDownload.Verifying -> {}
                 else -> TextButton(onClick = onLater) { Text("Later") }
             }
@@ -293,22 +294,22 @@ private fun InstallPermissionDialog(onNotNow: () -> Unit, onOpenSettings: () -> 
     AlertDialog(
         onDismissRequest = onNotNow,
         icon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-        title = { Text("Eenmalige toestemming") },
+        title = { Text(tr("Eenmalige toestemming", "One-time permission")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    text = "Om updates zelf te kunnen installeren moet Android het toestaan: " +
-                        "Onbekende apps installeren voor SceneRadio.",
+                    text = tr("Om updates zelf te kunnen installeren moet Android het toestaan: ", "To install updates by itself, Android must allow it: ") +
+                        tr("Onbekende apps installeren voor SceneRadio.", "Install unknown apps for SceneRadio."),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "Je zet één schakelaar om en tikt op Terug. Daarna gaat de update gewoon door.",
+                    text = tr("Je zet één schakelaar om en tikt op Terug. Daarna gaat de update gewoon door.", "You flip one switch and tap Back. Then the update simply continues."),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
         },
-        confirmButton = { Button(onClick = onOpenSettings) { Text("Instellingen openen") } },
-        dismissButton = { TextButton(onClick = onNotNow) { Text("Niet nu") } }
+        confirmButton = { Button(onClick = onOpenSettings) { Text(tr("Instellingen openen", "Open settings")) } },
+        dismissButton = { TextButton(onClick = onNotNow) { Text(tr("Niet nu", "Not now")) } }
     )
 }
 
@@ -352,7 +353,7 @@ private fun UpdateStatusCard(viewModel: RadioViewModel) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = status ?: "Controleer of er een nieuwe versie is",
+                        text = status ?: tr("Controleer of er een nieuwe versie is", "Check whether a new version is available"),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -367,7 +368,7 @@ private fun UpdateStatusCard(viewModel: RadioViewModel) {
                 onClick = { viewModel.checkAppUpdateNow() },
                 enabled = !checking
             ) {
-                Text(if (checking) "Controleren…" else "Nu controleren")
+                Text(if (checking) tr("Controleren…", "Checking…") else tr("Nu controleren", "Check now"))
             }
         }
     }
@@ -389,12 +390,12 @@ private fun AutoCheckRow(viewModel: RadioViewModel) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Automatisch controleren",
+                    text = tr("Automatisch controleren", "Check automatically"),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Eén keer per dag, bij het openen van de app",
+                    text = tr("Eén keer per dag, bij het openen van de app", "Once a day, when opening the app"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -423,32 +424,32 @@ private fun UpdateFoundCard(viewModel: RadioViewModel) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Update gevonden",
+                text = tr("Update gevonden", "Update found"),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Text(
                 text = if (download is UpdateDownload.Ready) {
-                    "Versie ${found.version} is gedownload en staat klaar om te installeren."
+                    tr("Versie ${found.version} is gedownload en staat klaar om te installeren.", "Version ${found.version} has been downloaded and is ready to install.")
                 } else {
-                    "Versie ${found.version} staat klaar. Tik om het overzicht van wat er nieuw is te zien en te updaten."
+                    tr("Versie ${found.version} staat klaar. Tik om het overzicht van wat er nieuw is te zien en te updaten.", "Version ${found.version} is ready. Tap to see what's new and to update.")
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Button(onClick = { viewModel.openUpdateDialog() }) {
-                Text(if (download is UpdateDownload.Ready) "Installeren" else "Bekijk update")
+                Text(if (download is UpdateDownload.Ready) tr("Installeren", "Install") else tr("Bekijk update", "View update"))
             }
             if (download is UpdateDownload.Idle) {
                 // Zonder eerst het installatiescherm: de update gaat naar Downloads (voor een auto-radio).
                 OutlinedButton(onClick = { viewModel.downloadUpdateOnly() }) {
-                    Text("Alleen downloaden (in Downloads)")
+                    Text(tr("Alleen downloaden (in Downloads)", "Download only (to Downloads)"))
                 }
             }
             if (download is UpdateDownload.Ready) {
                 OutlinedButton(onClick = { viewModel.saveUpdateToDownloads() }) {
-                    Text("Opslaan in Downloads")
+                    Text(tr("Opslaan in Downloads", "Save to Downloads"))
                 }
                 savedMessage?.let {
                     Text(
@@ -463,7 +464,7 @@ private fun UpdateFoundCard(viewModel: RadioViewModel) {
 }
 
 private fun megabytes(bytes: Long): String =
-    String.format(DUTCH, "%.1f MB", bytes / (1024.0 * 1024.0))
+    String.format(Lang.locale, "%.1f MB", bytes / (1024.0 * 1024.0))
 
 // "3 nov. 2026" uit het ISO-tijdstip van GitHub; null als het niet te lezen is.
 private fun publishedText(iso: String): String? {
@@ -471,7 +472,7 @@ private fun publishedText(iso: String): String? {
     return try {
         val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
         val date = parser.parse(iso) ?: return null
-        SimpleDateFormat("d MMM yyyy", DUTCH).format(date)
+        SimpleDateFormat("d MMM yyyy", Lang.locale).format(date)
     } catch (e: Exception) {
         null
     }
@@ -479,13 +480,13 @@ private fun publishedText(iso: String): String? {
 
 // "Laatst gecontroleerd: vandaag 14:28", of met datum als het langer geleden is.
 internal fun lastCheckedText(timestamp: Long): String {
-    if (timestamp <= 0L) return "Nog niet gecontroleerd"
+    if (timestamp <= 0L) return tr("Nog niet gecontroleerd", "Not checked yet")
     val date = Date(timestamp)
-    val day = SimpleDateFormat("yyyyMMdd", DUTCH)
-    val time = SimpleDateFormat("HH:mm", DUTCH).format(date)
+    val day = SimpleDateFormat("yyyyMMdd", Lang.locale)
+    val time = SimpleDateFormat("HH:mm", Lang.locale).format(date)
     return if (day.format(date) == day.format(Date())) {
-        "Laatst gecontroleerd: vandaag $time"
+        tr("Laatst gecontroleerd: vandaag $time", "Last checked: today $time")
     } else {
-        "Laatst gecontroleerd: ${SimpleDateFormat("d MMM", DUTCH).format(date)} $time"
+        tr("Laatst gecontroleerd: ${SimpleDateFormat("d MMM", Lang.locale).format(date)} $time", "Last checked: ${SimpleDateFormat("d MMM", Lang.locale).format(date)} $time")
     }
 }

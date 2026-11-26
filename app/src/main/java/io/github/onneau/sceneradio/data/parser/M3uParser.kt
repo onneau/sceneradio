@@ -1,6 +1,7 @@
 package io.github.onneau.sceneradio.data.parser
 
 import io.github.onneau.sceneradio.data.model.RadioStation
+import io.github.onneau.sceneradio.i18n.tr
 
 object M3uParser {
 
@@ -59,7 +60,7 @@ object M3uParser {
 
                 currentName = titleAfterComma(line)?.let { decodeEntities(it) }
                     ?: tvgName
-                    ?: "Onbekend Station"
+                    ?: tr("Onbekend Station", "Unknown Station")
             } else if (!line.startsWith("#")) {
                 // Dit is een stream-URL
                 if (line.startsWith("http://", ignoreCase = true) || line.startsWith("https://", ignoreCase = true) || line.startsWith("mms://", ignoreCase = true) || line.startsWith("rtsp://", ignoreCase = true)) {

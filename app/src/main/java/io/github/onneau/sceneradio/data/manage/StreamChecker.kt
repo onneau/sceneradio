@@ -10,6 +10,7 @@ import java.net.ConnectException
 import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLException
+import io.github.onneau.sceneradio.i18n.tr
 
 data class StreamCheckResult(
     val ok: Boolean,
@@ -45,7 +46,7 @@ object StreamChecker {
                 .header("Accept", "audio/*,*/*;q=0.1")
                 .build()
         } catch (e: IllegalArgumentException) {
-            return StreamCheckResult(false, null, "", "Ongeldige URL")
+            return StreamCheckResult(false, null, "", tr("Ongeldige URL", "Invalid URL"))
         }
 
         return try {
@@ -57,8 +58,8 @@ object StreamChecker {
                     status != 200 && status != 206 ->
                         StreamCheckResult(false, status, contentType, "HTTP $status")
                     !contentType.startsWith("audio/") -> {
-                        val shown = if (contentType.isEmpty()) "geen Content-Type" else contentType
-                        StreamCheckResult(false, status, contentType, "Geen audio ($shown)")
+                        val shown = if (contentType.isEmpty()) tr("geen Content-Type", "no Content-Type") else contentType
+                        StreamCheckResult(false, status, contentType, tr("Geen audio ($shown)", "No audio ($shown)"))
                     }
                     else -> StreamCheckResult(true, status, contentType, "")
                 }
@@ -69,11 +70,11 @@ object StreamChecker {
     }
 
     private fun describe(e: Exception): String = when (e) {
-        is UnknownHostException -> "Host onbekend (DNS)"
-        is InterruptedIOException -> "Time-out"
-        is SSLException -> "TLS-fout"
-        is ConnectException -> "Verbinding geweigerd"
-        else -> "Verbinding mislukt"
+        is UnknownHostException -> tr("Host onbekend (DNS)", "Unknown host (DNS)")
+        is InterruptedIOException -> tr("Time-out", "Timeout")
+        is SSLException -> tr("TLS-fout", "TLS error")
+        is ConnectException -> tr("Verbinding geweigerd", "Connection refused")
+        else -> tr("Verbinding mislukt", "Connection failed")
     }
 
     /** Zoals de generator: bij een fout één nieuwe poging, zodat een hapering niet meteen telt. */
